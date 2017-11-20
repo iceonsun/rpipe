@@ -78,6 +78,7 @@ int BridgePipe::RemovePipe(IPipe *pipe) {
             return doRemove(it);
         }
     }
+    fprintf(stderr, "failed to find and remove pipe: %p\n", pipe);
     return 0;
 }
 
@@ -117,14 +118,13 @@ IPipe *BridgePipe::FindPipe(ssize_t nread, const rbuf_t *buf) {
 int BridgePipe::AddPipe(BridgePipe::KeyType key, IPipe *pipe) {
     if (!key.empty() && pipe) {
         pipe->Init();
-        auto out = std::bind(&BridgePipe::Send, this, std::placeholders::_1, std::placeholders::_2);
+        auto out = std::bind(&BridgePipe::PSend, this, pipe, std::placeholders::_1, std::placeholders::_2);
         pipe->SetOutputCb(out);
 
         auto err = std::bind(&BridgePipe::OnTopPipeError, this, std::placeholders::_1, std::placeholders::_2);
         pipe->SetOnErrCb(err);
 
         mTopPipes.insert({key, pipe});
-//        mAddrMap.insert({key, addr});
     }
 }
 
@@ -177,3 +177,15 @@ void BridgePipe::OnBtmPipeError(IPipe *pipe, int err) {
 void BridgePipe::SetHashRawDataFunc(BridgePipe::HashFunc fn) {
     mHashFunc = fn;
 }
+
+int BridgePipe::PSend(IPipe *pipe, ssize_t nread, const rbuf_t *buf) {
+    if (nread < 0) {    // error occurs
+        OnTopPipeError(pipe, nread);
+        return nread;
+    } else if (nread == 0) {    // do nothing
+        return 0;
+    } else {
+        return Send(nread, buf);
+    }
+}
+

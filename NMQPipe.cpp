@@ -2,6 +2,7 @@
 // Created on 11/13/17.
 //
 
+#include <cassert>
 #include "NMQPipe.h"
 
 NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) {
@@ -55,11 +56,16 @@ int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
     int nret = nread;
     if (nread > 0) {
         nret = nmq_send(mNmq, buf->base, nread);
+    } else if (nread < 0) {
+        nmq_update(mNmq, iclock()); // sending remaining data
+        Output(nread, buf); // this means report error: nread
     }
     return nret;
 }
 
 int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
+    assert(nread > 0);  // it's caller's responsibility to check nread
+
     int nret = nread;
     if (nread > 0) {
         // omit allocating buf here. becuase we know nmq will not reuse buf.
@@ -67,7 +73,7 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
         if (nret >= 0) {
             int n = nmqRecv(mNmq);
             if (n < 0) {
-                return n;
+                return n;   // return error to caller
             }
         }
     }
@@ -75,6 +81,8 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
 }
 
 IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg) {
+    assert(len > 0);
+
     int nret = -1;
     if (len > 0) {
         auto pipe = static_cast<NMQPipe *>(nmq->arg);
@@ -84,10 +92,10 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         buf.data = pipe->GetTargetAddr();
         nret = pipe->Output(len, &buf);
     }
-    if (nret < 0) {
-        auto pipe = static_cast<NMQPipe *>(nmq->arg);
-        pipe->OnError(pipe, nret);
-    }
+//    if (nret < 0) {
+//        auto pipe = static_cast<NMQPipe *>(nmq->arg);
+//        pipe->OnError(pipe, nret);
+//    }
     return nret;
 }
 
@@ -108,9 +116,9 @@ int NMQPipe::nmqRecv(NMQ *nmq) {
         }
     }
     free(buf.base);
-    if (n < 0) {
-        OnError(this, n);
-    }
+//    if (n < 0) {
+//        OnError(this, n);
+//    }
     return n < 0 ? n : tot;
 }
 

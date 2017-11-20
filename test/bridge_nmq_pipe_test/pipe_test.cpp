@@ -79,7 +79,9 @@ void timer_cb(uv_timer_t *handle) {
         raw->Send(n, &out);
         free(out.base);
     } else {
-        raw->Close();
+        rbuf_t out;
+        raw->Send(-1, &out);
+//        raw->Close();
         uv_timer_stop(&writeTimer);
 //        uv_timer_stop(&flushTimer);
 //        uv_close(reinterpret_cast<uv_handle_t *>(&writer), NULL);
