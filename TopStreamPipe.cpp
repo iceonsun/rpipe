@@ -3,7 +3,9 @@
 //
 
 #include <cassert>
+#include <syslog.h>
 #include "TopStreamPipe.h"
+#include "debug.h"
 
 TopStreamPipe::TopStreamPipe(uv_stream_t *stream) {
     mTopStream = stream;
@@ -19,7 +21,7 @@ int TopStreamPipe::Init() {
 int TopStreamPipe::Input(ssize_t nread, const rbuf_t *buf) {
     assert(nread > 0);
 
-//    if (nread > 0) {
+    if (nread > 0) {
         rwrite_req_t *req = static_cast<rwrite_req_t *>(malloc(sizeof(rwrite_req_t)));
         req->buf.base = (char *) malloc(nread);
         req->buf.len = nread;
@@ -28,9 +30,9 @@ int TopStreamPipe::Input(ssize_t nread, const rbuf_t *buf) {
         req->write.data = this;
         uv_write(reinterpret_cast<uv_write_t *>(req), mTopStream, &req->buf, 1, write_cb);
         return nread;
-//    }
-//
-//    return nread;
+    }
+
+    return nread;
 }
 
 
@@ -46,32 +48,19 @@ int TopStreamPipe::Close() {
 void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     auto pipe = (TopStreamPipe *) stream->data;
 
+#ifndef NNDEBUG
+    if (nread > 0) {
+        debug(LOG_INFO, "read %d bytes: %.*s", nread, nread, buf);
+    }
+#endif
+
     rbuf_t rbuf = {0};
     rbuf.base = buf->base;
     rbuf.len = nread;
 
     pipe->Output(nread, &rbuf);
-
-//    if (nread < 0) {
-//        free(buf->base);
-//        pipe->OnError(pipe, nread);
-//        return;
-//    } else if (nread == 0) {
-//        free(buf->base);
-//        return;
-//    }
-//
-//    rbuf_t rbuf = {0};
-//    rbuf.base = buf->base;
-//    rbuf.len = nread;
-//
-//    int nret = pipe->Output(nread, &rbuf);
-//    free(rbuf.base);
-//    if (nret < 0) {
-//        pipe->OnError(pipe, nret);
-//    }
+    free(rbuf.base);
 }
-
 
 void TopStreamPipe::close_cb(uv_handle_t *handle) {
     free(handle);

@@ -16,17 +16,17 @@ int NMQPipe::Init() {
     mNmq = nmq_new(mConv, this);
     nmq_set_output_cb(mNmq, nmqOutputCb);
 
+    nmq_start(mNmq);
+
     PipeCb outcb = std::bind(&NMQPipe::Send, this, std::placeholders::_1, std::placeholders::_2);
     mTopPipe->SetOutputCb(outcb);
 
     PipeCb rcvcb = std::bind(&IPipe::Input, mTopPipe, std::placeholders::_1, std::placeholders::_2);
     SetOnRecvCb(rcvcb);
 
-//    auto err = std::bind(&IPipe::OnError, this);
-//    mTopPipe->SetOnErrCb(err);
     mTopPipe->SetOnErrCb([this](IPipe *pipe, int err) {
         fprintf(stderr, "topPipe %p error: %d\n", pipe, err);
-        this->OnError(this, err);   // replace pipe
+        this->OnError(this, err);   // replace pipe. pass error to btm
     });
 
     return 0;
@@ -90,12 +90,10 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         buf.base = const_cast<char *>(data);   // caution!! reuse ptr
         buf.len = len;
         buf.data = pipe->GetTargetAddr();
+        debug(LOG_INFO, "data: %p\n", data);
         nret = pipe->Output(len, &buf);
     }
-//    if (nret < 0) {
-//        auto pipe = static_cast<NMQPipe *>(nmq->arg);
-//        pipe->OnError(pipe, nret);
-//    }
+
     return nret;
 }
 
@@ -116,9 +114,6 @@ int NMQPipe::nmqRecv(NMQ *nmq) {
         }
     }
     free(buf.base);
-//    if (n < 0) {
-//        OnError(this, n);
-//    }
     return n < 0 ? n : tot;
 }
 
@@ -126,7 +121,3 @@ void NMQPipe::Flush(IUINT32 curr) {
     nmq_update(mNmq, curr);
     mTopPipe->Flush(curr);
 }
-
-//int NMQPipe::Output(const rbuf_t *rbuf) {
-//    return IPipe::Output(rbuf);
-//}

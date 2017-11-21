@@ -21,6 +21,7 @@ public:
 
 private:
     std::vector<rbuf_t *> mPendingData;
+    int cnt = 0;
 };
 
 

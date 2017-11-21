@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <nmq.h>
 #include <sstream>
+#include <enc.h>
 #include "RClient.h"
 #include "TopStreamPipe.h"
 #include "NMQPipe.h"
@@ -14,6 +15,11 @@ RClient::~RClient() {
 }
 
 int RClient::Loop(Config &conf) {
+    conf.param.localListenPort = 10010;
+    conf.param.localListenIface = "127.0.0.1";
+
+    conf.param.targetIp = "127.0.0.1";
+    conf.param.targetPort = 10011;
     mLoop = uv_default_loop();
     int nret = uv_ip4_addr(conf.param.targetIp, conf.param.targetPort, &mTargetAddr);
     if (nret != 0) {
@@ -79,17 +85,17 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
     if (0 == nret) {
         nret = uv_listen(reinterpret_cast<uv_stream_t *>(tcp), conf.param.BACKLOG, svr_conn_cb);
         if (nret) {
-            fprintf(stderr, "failed to listen tcp: %s\n", uv_strerror(nret));
+            debug(LOG_ERR, "failed to listen tcp: %s\n", uv_strerror(nret));
             uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
         }
     } else {
-        fprintf(stderr, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface, conf.param.localListenPort,
+        debug(LOG_ERR, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface, conf.param.localListenPort,
                 uv_strerror(nret));
         free(tcp);
     }
 
     if (nret) {
-        fprintf(stderr, "failed to start: %s\n", uv_strerror(nret));
+        debug(LOG_ERR, "failed to start, err: %d\n", nret);
         tcp = nullptr;
     }
 
@@ -102,8 +108,9 @@ void RClient::svr_conn_cb(uv_stream_t *server, int status) {
 }
 
 void RClient::newConn(uv_stream_t *server, int status) {
+    debug(LOG_INFO, "new connection. status: %d\n", status);
     if (status) {
-        fprintf(stderr, "new connection error. status: %d, err: %s\n", status, uv_strerror(status));
+        debug(LOG_INFO, "new connection error. status: %d, err: %s\n", status, uv_strerror(status));
         return;
     }
 
@@ -121,14 +128,18 @@ void RClient::onNewClient(uv_stream_t *client) {
     mConv++;
     IPipe *top = new TopStreamPipe(client);
     IPipe *nmq = new NMQPipe(mConv, top);   // nmq pipe addr
-    nmq->SetTargetAddr(&mTargetAddr);
+    nmq->SetTargetAddr(&mTargetAddr);   // todo: maloc and cp
 
     char buf[16] = {0};
-    sprintf(buf, "%u", mConv);
+    char *p = encode_uint32(mConv, buf);
     rbuf_t rbuf = {0};
     rbuf.base = buf;
-    ssize_t len = strlen(buf);
-    auto key = HashKeyFunc(len, &rbuf);
+    auto key = HashKeyFunc(p - buf, &rbuf);
+    if (key.empty()) {
+        debug(LOG_ERR, "key is empty!!!");
+        delete nmq; // top is deleted in side nmq
+        return;
+    }
 
     mBrigde->AddPipe(key, nmq);
 }

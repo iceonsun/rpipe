@@ -27,7 +27,7 @@ public:
 
     void Flush(IUINT32 curr) override;
 
-    // top pipes should call this function
+    // top pipes should call this function to send data
     virtual int PSend(IPipe *pipe, ssize_t nread, const rbuf_t *buf);
 
     /* new methods */

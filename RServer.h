@@ -12,7 +12,7 @@ class RServer : public RApp {
 public:
     int Loop(Config &conf) override;
 
-    bool isServer() { return true; };
+    bool isServer() override { return true; };
 
     void Close() override;
 
@@ -30,7 +30,7 @@ protected:
     virtual uv_udp_t *CreateBtmDgram(const Config &conf);
 
 private:
-    virtual IPipe *CreateTcpPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf);
+    virtual IPipe *CreateStreamPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf);
 
 private:
     uv_loop_t *mLoop;

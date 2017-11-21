@@ -2,13 +2,13 @@
 // Created on 11/13/17.
 //
 
+#include <cassert>
 #include "BtmDGramPipe.h"
 
 
 BtmDGramPipe::BtmDGramPipe(uv_udp_t *dgram) {
     mDgram = dgram;
 }
-
 
 int BtmDGramPipe::Init() {
     mDgram->data = this;
@@ -17,19 +17,13 @@ int BtmDGramPipe::Init() {
     return 0;
 }
 
-
 int BtmDGramPipe::Close() {
     if (mDgram) {
         uv_close(reinterpret_cast<uv_handle_t *>(mDgram), close_cb);
         mDgram->data = nullptr;
         free(mDgram);
-//        free(mAddr);
         mDgram = nullptr;
     }
-
-//    if (mAddr) {
-//        free(mAddr);
-//    }
 
     return 0;
 }
@@ -69,6 +63,7 @@ void BtmDGramPipe::recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
         rbuf_t rbuf = {0};
         rbuf.base = buf->base;
         rbuf.len = nread;
+        const struct sockaddr_in *addr2 = reinterpret_cast<const sockaddr_in *>(addr);
         rbuf.data = (void *) addr;
         nret = pipe->OnRecv(nread, &rbuf);
     }
@@ -80,20 +75,18 @@ void BtmDGramPipe::recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
 }
 
 int BtmDGramPipe::Send(ssize_t nread, const rbuf_t *buf) {
+    assert(nread > 0);
+
+    int nret = nread;
     if (nread > 0) {
         rbuf_t rbuf = {0};
         rbuf.base = (char *) malloc(nread);
         rbuf.len = nread;
         rbuf.data = buf->data;  // this stores addr
         memcpy(rbuf.base, buf->base, nread);    // cp data to this pipe
-        int nret = Output(nread, &rbuf);
-//        free(rbuf.base);  // it's freed in output
-        if (nret < 0) {
-            OnError(this, nret);
-        }
-        return nret;
+        nret = Output(nread, &rbuf);
     }
-    return 0;
+    return nret;
 }
 
 void BtmDGramPipe::SetOutputCb(IPipe::PipeCb cb) {

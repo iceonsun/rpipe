@@ -17,7 +17,7 @@ uv_tcp_t tcp;
 uv_loop_t *LOOP;
 uv_timer_t writeTimer;
 uv_timer_t flushTimer;
-uv_tcp_t writer;
+//uv_tcp_t writer;
 int cnt = 0;
 
 RawPipe *raw;
@@ -80,9 +80,12 @@ void timer_cb(uv_timer_t *handle) {
         free(out.base);
     } else {
         rbuf_t out;
-        raw->Send(-1, &out);
+        raw->Send(UV_EOF, &out);    // eof
 //        raw->Close();
         uv_timer_stop(&writeTimer);
+        uv_timer_stop(&flushTimer);
+        bridge->Flush(iclock());
+        bridge->Close();
 //        uv_timer_stop(&flushTimer);
 //        uv_close(reinterpret_cast<uv_handle_t *>(&writer), NULL);
     }
@@ -135,7 +138,7 @@ int main() {
 
     uv_run(LOOP, UV_RUN_DEFAULT);
 
-    bridge->Close();
+//    bridge->Close();
     delete bridge;
 
     return 0;

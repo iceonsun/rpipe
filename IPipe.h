@@ -27,14 +27,15 @@ public:
     // all methods should follow above rules.
 
     // data in. pass data to Output by default.
-    virtual int Send(ssize_t nread, const rbuf_t *buf);   // todo: Send is called by other. Send默认调用Output.
+    virtual int Send(ssize_t nread, const rbuf_t *buf);
 
     // data in. pass data to OnRecv by default.
+    // it's caller's responsibility to check validity of nread and buf.
     virtual int Input(ssize_t nread, const rbuf_t *buf);  // called by other
 
     // data out. data flows out passively
-    virtual int
-    OnRecv(ssize_t nread, const rbuf_t *buf); // todo: 按理说recv应该调用input。 recv 应该改成DataOut, 主动式。called by self
+    // it's callee's responsibility to check if op succeeds and callee will signify error if any
+    virtual int OnRecv(ssize_t nread, const rbuf_t *buf);
 
     // data out. calls onOutputCb by default.
     virtual int Output(ssize_t nread, const rbuf_t *buf); // output is called by self.
@@ -43,6 +44,9 @@ public:
 
     virtual void SetOnRecvCb(PipeCb cb);
 
+    // synchronous read/write will report error through return value
+    // asynchronous read/write will report error through callback, which is OnError
+    // @pipe is the nearest pipe to this pipe that can leads to error point.
     virtual void OnError(IPipe *pipe, int err);
 
     virtual void SetOnErrCb(ErrCb cb);

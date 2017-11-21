@@ -17,9 +17,11 @@
 
 int RServer::Loop(Config &conf) {
     conf.param.localListenIface = "127.0.0.1";
-    conf.param.targetIp = "127.0.0.1";
     conf.param.localListenPort = 10011;
-    conf.param.targetPort = 10086;
+
+    conf.param.targetIp = "127.0.0.1";
+    conf.param.targetPort = 10022;
+
     mLoop = uv_default_loop();
     mConf = conf;
 
@@ -44,8 +46,6 @@ void RServer::Close() {
         delete mBrigde;
         mBrigde = nullptr;
     }
-
-
 }
 
 void RServer::Flush() {
@@ -57,7 +57,7 @@ BridgePipe *RServer::CreateBridgePipe(const Config &conf) {
     auto *bridge = new BridgePipe(pipe);
 
     bridge->SetOnErrCb([this](IPipe *pipe, int err) {
-//        uv_timer_stop(&this->mFlushTimer);
+//        uv_timer_stop(&this->mFlushTimer);    // todo don't exit.
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
         uv_stop(this->mLoop);
     });
@@ -98,32 +98,36 @@ IPipe *RServer::OnRawData(ssize_t nread, const rbuf_t *buf) {
         int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         // do this synchronously
         int nret = connect(sock, reinterpret_cast<const sockaddr *>(&mTargetAddr), sizeof(mTargetAddr));
-        if (!nret) {
+        if (nret) {
             fprintf(stderr, "failed to connect: %s\n", strerror(errno));
             return nullptr;
         }
         uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
         uv_tcp_init(mLoop, tcp);
         nret = uv_tcp_open(tcp, sock);
-        if (!nret) {
+        if (nret) {
             free(tcp);
             close(sock);
         }
-        return CreateTcpPipe(reinterpret_cast<uv_stream_t *>(tcp), nread, buf);
+        return CreateStreamPipe(reinterpret_cast<uv_stream_t *>(tcp), nread, buf);
 
     }
     return nullptr;
 }
 
-IPipe *RServer::CreateTcpPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf) {
+IPipe *RServer::CreateStreamPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf) {
     IPipe *top = new TopStreamPipe(conn);
     NMQPipe *nmq = new NMQPipe(++mConv, top);
-    nmq->SetTargetAddr(static_cast<const sockaddr_in *>(rbuf->data));
+    struct sockaddr_in *addr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
+    memcpy(addr, rbuf->data, sizeof(addr));
+    nmq->SetTargetAddr(addr);
 //    nmq->Init();
 
+    debug(LOG_INFO, "nmq pipe: %p", nmq);
     auto key = HashKeyFunc(nread, rbuf);
     assert(!key.empty());
     mBrigde->AddPipe(key, nmq);
+    return nmq;
 }
 
 BridgePipe::KeyType RServer::HashKeyFunc(ssize_t nread, const rbuf_t *buf) {

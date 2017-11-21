@@ -7,11 +7,17 @@
 
 
 #include <nmq.h>
+#include <syslog.h>
 #include "IPipe.h"
+#include "debug.h"
 
 class NMQPipe : public IPipe {
 public:
     NMQPipe(IUINT32 conv, IPipe *topPipe);
+
+#ifndef NNDEBUG
+    virtual ~NMQPipe() {debug(LOG_ERR, "delete");}
+#endif
 
     int Init() override;
 

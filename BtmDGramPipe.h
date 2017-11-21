@@ -11,7 +11,6 @@
 class BtmDGramPipe : public IPipe {
 public:
     explicit BtmDGramPipe(uv_udp_t *dgram);
-    virtual ~BtmDGramPipe() = default;
 
     int Init() override;
 
@@ -32,7 +31,6 @@ protected:
     static void close_cb(uv_handle_t* handle);
 private:
     uv_udp_t *mDgram = nullptr;
-//    struct sockaddr *mAddr;
 };
 
 
