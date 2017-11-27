@@ -32,15 +32,16 @@ int RServer::Loop(Config &conf) {
     uv_timer_init(mLoop, &mFlushTimer);
 
     mFlushTimer.data = this;
-    uv_timer_start(&mFlushTimer, flush_cb, conf.param.interval * 2, conf.param.interval);
+    uv_timer_start(&mFlushTimer, flush_cb, conf.param.interval, conf.param.interval);
 
+    mBrigde->Start();
     uv_run(mLoop, UV_RUN_DEFAULT);
+    Close();
 }
 
 void RServer::Close() {
     if (mBrigde) {
-        mBrigde->SetHashRawDataFunc(nullptr);
-        mBrigde->SetOnFreshDataCb(nullptr);
+        mBrigde->SetOnCreateNewPipeCb(nullptr);
         mBrigde->SetOnErrCb(nullptr);
         mBrigde->Close();
         delete mBrigde;
@@ -61,10 +62,10 @@ BridgePipe *RServer::CreateBridgePipe(const Config &conf) {
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
         uv_stop(this->mLoop);
     });
-    bridge->SetOnFreshDataCb([this](ssize_t nread, const rbuf_t *buf) -> IPipe * {
-        return this->OnRawData(nread, buf);
+    bridge->SetOnCreateNewPipeCb([this](const SessionPipe::KeyType& key, const void *addr) -> SessionPipe * {
+        return this->OnRawData(key, addr);
     });
-    bridge->SetHashRawDataFunc(HashKeyFunc);
+
     bridge->Init();
     return bridge;
 }
@@ -83,6 +84,7 @@ uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     uv_udp_init(mLoop, udp);
     struct sockaddr_in addr = {0};
     uv_ip4_addr(conf.param.localListenIface, conf.param.localListenPort, &addr);
+    debug(LOG_INFO, "server, listening on udp: %s:%d", conf.param.localListenIface, conf.param.localListenPort);
     int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, UV_UDP_REUSEADDR);
     if (nret) {
         fprintf(stderr, "bind error: %s\n", uv_strerror(nret));
@@ -93,13 +95,14 @@ uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     return udp;
 }
 
-IPipe *RServer::OnRawData(ssize_t nread, const rbuf_t *buf) {
-    if (nread > 0 && buf->data) {
+SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *addr) {
+    if (addr) {
         int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-        // do this synchronously
+        // do this synchronously. todo: do this asynchronously. create a data pool for pending data.
         int nret = connect(sock, reinterpret_cast<const sockaddr *>(&mTargetAddr), sizeof(mTargetAddr));
         if (nret) {
-            fprintf(stderr, "failed to connect: %s\n", strerror(errno));
+            fprintf(stderr, "failed to connect %s: %d: %s\n", inet_ntoa(mTargetAddr.sin_addr),
+                    ntohs(mTargetAddr.sin_port), strerror(errno));
             return nullptr;
         }
         uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
@@ -109,36 +112,20 @@ IPipe *RServer::OnRawData(ssize_t nread, const rbuf_t *buf) {
             free(tcp);
             close(sock);
         }
-        return CreateStreamPipe(reinterpret_cast<uv_stream_t *>(tcp), nread, buf);
+        return CreateStreamPipe(reinterpret_cast<uv_stream_t *>(tcp), key, addr);
 
     }
     return nullptr;
 }
 
-IPipe *RServer::CreateStreamPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf) {
+SessionPipe *RServer::CreateStreamPipe(uv_stream_t *conn, const SessionPipe::KeyType &key, const void *arg) {
     IPipe *top = new TopStreamPipe(conn);
     NMQPipe *nmq = new NMQPipe(++mConv, top);
-    struct sockaddr_in *addr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
-    memcpy(addr, rbuf->data, sizeof(addr));
-    nmq->SetTargetAddr(addr);
-//    nmq->Init();
+    const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
+    SessionPipe *sess = new SessionPipe(nmq, mLoop, key, addr);
 
-    debug(LOG_INFO, "nmq pipe: %p", nmq);
-    auto key = HashKeyFunc(nread, rbuf);
-    assert(!key.empty());
-    mBrigde->AddPipe(key, nmq);
-    return nmq;
+    debug(LOG_INFO, "sess pipe: %p", sess);
+    mBrigde->AddPipe(sess);
+    return sess;
 }
 
-BridgePipe::KeyType RServer::HashKeyFunc(ssize_t nread, const rbuf_t *buf) {
-    if (nread > sizeof(IUINT32) && buf->data && buf->base) {
-        IUINT32 conv = nmq_get_conv(buf->base);
-        auto *addr = static_cast<sockaddr_in *>(buf->data);
-        std::ostringstream out;
-//        out << addr->sin_addr.s_addr << ":" << addr->sin_port;
-        out << inet_ntoa(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ":" << conv;
-        return out.str();
-    }
-
-    return nullptr;
-}

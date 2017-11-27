@@ -33,13 +33,13 @@ int RClient::Loop(Config &conf) {
         return 1;
     }
 
-    mBrigde = CreateBridgePipe(conf);
+    mBridge = CreateBridgePipe(conf);
 
     uv_timer_init(mLoop, &mFlushTimer);
 
     mFlushTimer.data = this;
-    uv_timer_start(&mFlushTimer, flush_cb, conf.param.interval * 2, conf.param.interval);
-
+    uv_timer_start(&mFlushTimer, flush_cb, conf.param.interval, conf.param.interval);
+    mBridge->Start();
     uv_run(mLoop, UV_RUN_DEFAULT);
 
     Close();
@@ -58,14 +58,13 @@ void RClient::close_cb(uv_handle_t *handle) {
 }
 
 void RClient::Close() {
-    if (mBrigde) {
-        mBrigde->SetHashRawDataFunc(nullptr);
-        mBrigde->SetOnFreshDataCb(nullptr);
-        mBrigde->SetOnErrCb(nullptr);
+    if (mBridge) {
+        mBridge->SetOnCreateNewPipeCb(nullptr);
+        mBridge->SetOnErrCb(nullptr);
 
-        mBrigde->Close();
-        delete mBrigde;
-        mBrigde = nullptr;
+        mBridge->Close();
+        delete mBridge;
+        mBridge = nullptr;
     }
 
     if (mListenHandle) {
@@ -128,20 +127,10 @@ void RClient::onNewClient(uv_stream_t *client) {
     mConv++;
     IPipe *top = new TopStreamPipe(client);
     IPipe *nmq = new NMQPipe(mConv, top);   // nmq pipe addr
-    nmq->SetTargetAddr(&mTargetAddr);   // todo: maloc and cp
+    SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, &mTargetAddr);
+    sess->SetExpireIfNoOps(10); // todo: fill value from conf
 
-    char buf[16] = {0};
-    char *p = encode_uint32(mConv, buf);
-    rbuf_t rbuf = {0};
-    rbuf.base = buf;
-    auto key = HashKeyFunc(p - buf, &rbuf);
-    if (key.empty()) {
-        debug(LOG_ERR, "key is empty!!!");
-        delete nmq; // top is deleted in side nmq
-        return;
-    }
-
-    mBrigde->AddPipe(key, nmq);
+    mBridge->AddPipe(sess);
 }
 
 BridgePipe *RClient::CreateBridgePipe(const Config &conf) {
@@ -152,26 +141,18 @@ BridgePipe *RClient::CreateBridgePipe(const Config &conf) {
     }
 
     auto *pipe = new BridgePipe(btmPipe);
-    pipe->SetOnFreshDataCb(nullptr);    // explicitly set cb. ignore unknown data
+    pipe->SetOnCreateNewPipeCb(nullptr);    // explicitly set cb. ignore unknown data
 
     pipe->SetOnErrCb([this](IPipe *pipe, int err) {
-//        uv_timer_stop(&this->mFlushTimer);
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
         uv_stop(this->mLoop);
     });
-    pipe->SetHashRawDataFunc(HashKeyFunc);
     pipe->Init();
     return pipe;
 }
 
 void RClient::Flush() {
-    mBrigde->Flush(iclock());
+    mBridge->Flush(iclock());
 }
 
-BridgePipe::KeyType RClient::HashKeyFunc(ssize_t nread, const rbuf_t *buf) {
-    if (nread >= sizeof(IUINT32) && buf->base) {
-        return  std::to_string(nmq_get_conv(buf->base));
-    }
-    return "";
-}
 

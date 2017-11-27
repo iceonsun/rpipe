@@ -8,16 +8,14 @@
 
 #include <nmq.h>
 #include <syslog.h>
-#include "IPipe.h"
 #include "debug.h"
+#include "ITopContainerPipe.h"
 
-class NMQPipe : public IPipe {
+class NMQPipe : public ITopContainerPipe {
 public:
     NMQPipe(IUINT32 conv, IPipe *topPipe);
 
-#ifndef NNDEBUG
-    virtual ~NMQPipe() {debug(LOG_ERR, "delete");}
-#endif
+    virtual ~NMQPipe();
 
     int Init() override;
 
@@ -29,16 +27,17 @@ public:
 
     void Flush(IUINT32 curr) override;
 
-
 protected:
     static IINT32 nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg);
 
 private:
     int nmqRecv(NMQ *nmq);
+
 private:
     IUINT32 mConv = 0;
     NMQ *mNmq = nullptr;
-    IPipe *mTopPipe = nullptr;
+    int mRcvTot = 0;
+    int mSndTot = 0;
 };
 
 

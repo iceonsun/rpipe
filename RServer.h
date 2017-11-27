@@ -8,6 +8,7 @@
 
 #include "RApp.h"
 
+// todo: when target tcp is closed. we should notify peer to close.
 class RServer : public RApp {
 public:
     int Loop(Config &conf) override;
@@ -22,19 +23,16 @@ public:
 
     IPipe *CreateBtmPipe(const Config &conf) override;
 
-    virtual IPipe *OnRawData(ssize_t nread, const rbuf_t *buf);
-
-    static BridgePipe::KeyType HashKeyFunc(ssize_t nread, const rbuf_t *buf);
+    virtual SessionPipe * OnRawData(const SessionPipe::KeyType &key, const void *addr);
 
 protected:
     virtual uv_udp_t *CreateBtmDgram(const Config &conf);
 
 private:
-    virtual IPipe *CreateStreamPipe(uv_stream_t *conn, ssize_t nread, const rbuf_t *rbuf);
+    virtual SessionPipe *CreateStreamPipe(uv_stream_t *conn, const SessionPipe::KeyType &key, const void *addr);
 
 private:
     uv_loop_t *mLoop;
-    uv_handle_t *mListenHandle;
     BridgePipe *mBrigde;
     uv_timer_t mFlushTimer;
     Config mConf;

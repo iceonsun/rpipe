@@ -33,6 +33,7 @@ void free_rwrite_req(rwrite_req_t *req);
 typedef struct rudp_send_t {
     uv_udp_send_t udp_send;
     uv_buf_t buf;
+    struct sockaddr *addr;
 } rudp_send_t;
 
 void free_rudp_send(rudp_send_t *send);

@@ -5,7 +5,7 @@
 /build
 /captures
 .externalNativeBuild
-cmake-build-debug/
+/cmake-build-debug/*
 *.gch
 *.out
 *.dSYM

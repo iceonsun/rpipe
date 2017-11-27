@@ -20,7 +20,7 @@ public:
 
     int Input(ssize_t nread, const rbuf_t *buf) override;
 
-    void SetOutputCb(PipeCb cb) override;
+    void SetOutputCb(const PipeCb &cb) override;
 
     int Close() override;
 
@@ -31,6 +31,7 @@ protected:
     static void close_cb(uv_handle_t* handle);
 private:
     uv_udp_t *mDgram = nullptr;
+    IUINT32 mCnt = 0;
 };
 
 

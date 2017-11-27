@@ -34,6 +34,9 @@ void free_rudp_send(rudp_send_t *send) {
         if (send->buf.base) {
             free(send->buf.base);
         }
+        if (send->addr) {
+            free(send->addr);
+        }
         free(send);
     }
 }

@@ -3,13 +3,16 @@
 //
 
 #include <cassert>
+#include <syslog.h>
 #include "IPipe.h"
+#include "debug.h"
 
 IPipe::~IPipe() {
-    if (mAddr) {
-        free(mAddr);
-        mAddr = nullptr;
-    }
+//    if (mAddr) {
+//        free(mAddr);
+//        mAddr = nullptr;
+//    }
+    debug(LOG_INFO, "");
 }
 
 int IPipe::Output(ssize_t nread, const rbuf_t *buf) {
@@ -26,11 +29,11 @@ int IPipe::OnRecv(ssize_t nread, const rbuf_t *buf) {
     return -1;
 }
 
-void IPipe::SetOutputCb(IPipe::PipeCb cb) {
+void IPipe::SetOutputCb(const PipeCb &cb) {
     mOutputCb = cb;
 }
 
-void IPipe::SetOnRecvCb(IPipe::PipeCb cb) {
+void IPipe::SetOnRecvCb(const PipeCb &cb) {
     mOnRecvCb = cb;
 }
 
@@ -48,20 +51,20 @@ void IPipe::OnError(IPipe *pipe, int err) {
     }
 }
 
-void IPipe::SetOnErrCb(IPipe::ErrCb cb) {
+void IPipe::SetOnErrCb(const ErrCb &cb) {
     mErrCb = cb;
 }
-void IPipe::SetTargetAddr(const sockaddr_in *target) {
-    if (!target) {
-        fprintf(stderr, "target is nulll!\n");
-        return;
-    }
-
-    if (mAddr) {
-        fprintf(stderr, "cannot set addr twice!\n");
-        return;
-    }
-
-    mAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
-    memcpy(mAddr, target, sizeof(struct sockaddr_in));
-}
+//void IPipe::SetTargetAddr(const sockaddr_in *target) {
+//    if (!target) {
+//        fprintf(stderr, "target is nulll!\n");
+//        return;
+//    }
+//
+//    if (mAddr) {
+//        fprintf(stderr, "cannot set addr twice!\n");
+//        return;
+//    }
+//
+//    mAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
+//    memcpy(mAddr, target, sizeof(struct sockaddr_in));
+//}

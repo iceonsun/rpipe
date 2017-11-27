@@ -50,7 +50,7 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
 
 #ifndef NNDEBUG
     if (nread > 0) {
-        debug(LOG_INFO, "read %d bytes: %.*s", nread, nread, buf);
+        debug(LOG_ERR, "read %d bytes: %.*s", nread, nread, buf);
     }
 #endif
 

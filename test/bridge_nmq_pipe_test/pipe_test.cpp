@@ -76,6 +76,7 @@ void timer_cb(uv_timer_t *handle) {
         rbuf_t out;
         out.base = static_cast<char *>(malloc(sizeof(20)));
         int n = sprintf(out.base, "hello %d", cnt);
+        fprintf(stderr, "send %d bytes: %.*s\n", n, n, out.base);
         raw->Send(n, &out);
         free(out.base);
     } else {
@@ -112,16 +113,12 @@ int main() {
     });
 
     NMQPipe *nmqPipe = new NMQPipe(1, raw);
-//    nmqPipe->SetTargetAddr()
-    bridge->AddPipe("1", nmqPipe);
+    SessionPipe *sess = new SessionPipe(nmqPipe, uv_default_loop(), 1, nullptr);
 
-    bridge->SetHashRawDataFunc([](ssize_t nread, const rbuf_t *buf) -> BridgePipe::KeyType {
-        if (nread > sizeof(IUINT32)) {
-            IUINT32 conv = nmq_get_conv(buf->base);
-            return std::to_string(conv);
-        }
-        return "";
-    });
+//    nmqPipe->SetTargetAddr()
+    bridge->AddPipe(sess);
+
+     bridge->Start();
 
     LOOP = uv_default_loop();
 //    uv_tcp_init(LOOP, &tcp);

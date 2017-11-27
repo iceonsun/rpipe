@@ -28,8 +28,6 @@ public:
 
     IPipe *CreateBtmPipe(const Config &conf) override;
 
-    static BridgePipe::KeyType HashKeyFunc(ssize_t nread, const rbuf_t *buf);
-
 protected:
 
     virtual uv_handle_t *InitTcpListen(const Config &conf);
@@ -48,7 +46,7 @@ private:
 private:
     IUINT32 mConv = 0;
     uv_loop_t *mLoop;
-    BridgePipe *mBrigde = nullptr;
+    BridgePipe *mBridge = nullptr;
     uv_handle_t *mListenHandle = nullptr;
     uv_timer_t mFlushTimer;
     struct sockaddr_in mTargetAddr;

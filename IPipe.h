@@ -5,8 +5,10 @@
 #ifndef RPIPE_IPIPE_H
 #define RPIPE_IPIPE_H
 
-
+#include <cassert>
 #include <functional>
+
+
 #include <types.h>
 #include "rcommon.h"
 
@@ -17,9 +19,19 @@ public:
     typedef std::function<int(ssize_t nread, const rbuf_t *buf)> PipeCb;
     typedef std::function<void(IPipe *pipe, int err)> ErrCb;
 
+    enum CMD {
+        NOP = 0,    // normal data flow
+        SYN = 1,
+        FIN = 2,    // close normally
+        RST = 3,    // peer conn donsn't exist
+    };
+
     virtual ~IPipe();
 
-    virtual int Init() = 0;
+    // todo: init & start
+    virtual int Init() { mInited = true; };
+
+    virtual void Start() { assert(mInited == true); }
 
     // buf.base within a pipe are reused. base from different pipes are copied.
     // so,  pipe should be responsable to free mem allocated by itself
@@ -40,30 +52,30 @@ public:
     // data out. calls onOutputCb by default.
     virtual int Output(ssize_t nread, const rbuf_t *buf); // output is called by self.
 
-    virtual void SetOutputCb(PipeCb cb);
+    virtual void SetOutputCb(const PipeCb &cb);
 
-    virtual void SetOnRecvCb(PipeCb cb);
+    virtual void SetOnRecvCb(const PipeCb &cb);
 
     // synchronous read/write will report error through return value
     // asynchronous read/write will report error through callback, which is OnError
     // @pipe is the nearest pipe to this pipe that can leads to error point.
     virtual void OnError(IPipe *pipe, int err);
 
-    virtual void SetOnErrCb(ErrCb cb);
+    virtual void SetOnErrCb(const ErrCb &cb);
 
     virtual int Close() = 0;
 
     virtual void Flush(IUINT32 curr) {}
 
-    virtual void SetTargetAddr(const sockaddr_in *target);
-
-    virtual struct sockaddr_in *GetTargetAddr() { return mAddr; }
+    // prevent copying
+    IPipe &operator=(const IPipe &pipe) = delete;
 
 protected:
     PipeCb mOutputCb = nullptr;
     PipeCb mOnRecvCb = nullptr;
     ErrCb mErrCb = nullptr;
-    struct sockaddr_in *mAddr = nullptr;
+//    struct sockaddr_in *mAddr = nullptr;
+    bool mInited = false;
 };
 
 

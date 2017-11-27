@@ -8,15 +8,13 @@
 #include <list>
 #include <map>
 #include "IPipe.h"
+#include "SessionPipe.h"
 
 class BridgePipe : public IPipe {
 public:
+    typedef std::function<SessionPipe *(const SessionPipe::KeyType &, const void *addr)> OnCreatePipeCb;
+
     explicit BridgePipe(IPipe *btmPipe);
-
-    typedef std::string KeyType;
-
-    typedef std::function<KeyType(ssize_t nread, const rbuf_t *buf)> HashFunc;
-    typedef std::function<IPipe *(ssize_t nread, const rbuf_t *buf)> OnFreshDataCb;
 
     /* inherited from IPipe */
     int Init() override;
@@ -28,44 +26,40 @@ public:
     void Flush(IUINT32 curr) override;
 
     // top pipes should call this function to send data
-    virtual int PSend(IPipe *pipe, ssize_t nread, const rbuf_t *buf);
+    virtual int PSend(SessionPipe *pipe, ssize_t nread, const rbuf_t *buf);
 
     /* new methods */
     // if (key) must be true
 
-    virtual void SetOnFreshDataCb(OnFreshDataCb cb);
+    virtual int AddPipe(SessionPipe *pipe);
 
-    virtual void SetHashRawDataFunc(HashFunc fn);
+    virtual int RemovePipe(SessionPipe *pipe);
 
-    virtual int AddPipe(BridgePipe::KeyType key, IPipe *pipe);
+    virtual SessionPipe *FindPipe(const SessionPipe::KeyType &key) const;
 
-    virtual int RemovePipe(IPipe *pipe);
-
-    virtual IPipe *FindPipe(ssize_t nread, const rbuf_t *buf);
-
-    virtual void OnTopPipeError(IPipe *pipe, int err);
+    virtual void OnTopPipeError(SessionPipe *pipe, int err);
 
     virtual void OnBtmPipeError(IPipe *pipe, int err);
 
-protected:
-    virtual IPipe *onFreshData(ssize_t nread, const rbuf_t *buf);
+    virtual void SetOnCreateNewPipeCb(const OnCreatePipeCb &cb);
 
-    virtual BridgePipe::KeyType keyForRawData(ssize_t nread, const rbuf_t *data);
+    void Start() override;
+
+protected:
+    virtual SessionPipe *onCreateNewPipe(const SessionPipe::KeyType &key, void *addr);
 
 private:
 
-    int doRemove(std::map<KeyType, IPipe *>::iterator it);
+    int doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator it);
 
     int removeAll();
 
     inline void cleanUseless();
 
-    std::map<KeyType, struct sockaddr *> mAddrMap;
-    std::map<KeyType, IPipe *> mTopPipes;
+    std::map<SessionPipe::KeyType, SessionPipe *> mTopPipes;
     IPipe *mBtmPipe;
-    HashFunc mHashFunc;
-    std::list<IPipe *> mUselessPipe;
-    OnFreshDataCb mFreshDataCb;
+    std::list<SessionPipe *> mUselessPipe;
+    OnCreatePipeCb mCreateNewPipeCb;
 };
 
 

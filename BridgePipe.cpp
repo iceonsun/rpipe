@@ -7,12 +7,14 @@
 #include <syslog.h>
 #include "BridgePipe.h"
 #include "debug.h"
-#include <utility>
+
 BridgePipe::BridgePipe(IPipe *btmPipe) {
     mBtmPipe = btmPipe;
 }
 
 int BridgePipe::Init() {
+    IPipe::Init();
+
     mBtmPipe->Init();   // todo init must be called. make IPipe::Init non pure virtual. adn create start.
 
     auto out = std::bind(&IPipe::Send, mBtmPipe, std::placeholders::_1, std::placeholders::_2);
@@ -48,43 +50,42 @@ int BridgePipe::Close() {
 
 int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
     int nret = nread;
-    IPipe *pipe = nullptr;
-    if (nread > 0 && buf) {
-        pipe = FindPipe(nread, buf);
-        // cannot be null
-        if (!pipe) {
-//            pipe = onFreshData(nread, buf);   // todo
-            auto pipe2 = onFreshData(nread, buf);   // todo
-            pipe = FindPipe(nread, buf);
-            printf("pipe1: %p, pipe2: %p", pipe, pipe2);
-            if (!pipe) {
-                debug(LOG_ERR, "null pipe. unrecognized data! ignore\n");
-                return 0;   //
+    if (nread >= SessionPipe::HEAD_LEN) {
+        SessionPipe::KeyType key = SessionPipe::BuildKey(nread, buf);
+        SessionPipe *sess = FindPipe(key);
+        debug(LOG_ERR, "key: %s", key.c_str());
+        if (SessionPipe::IsCloseSignal(nread, buf)) {
+            if (!sess) {    // if doesn't exist. we do nothing. otherwise we pass it to sessppe.
+                return 0;
+            }
+        } else {
+            if (!sess) {
+                sess = onCreateNewPipe(key, buf->data);
+                if (!sess) {
+                    return 0;   // dont' create pipe
+                }
             }
         }
-        debug(LOG_INFO, "pipe: %p", pipe);
-        nret = pipe->Input(nread, buf);
+        nret = sess->Input(nread, buf);
         if (nret < 0) {
-            OnTopPipeError(pipe, nret);
+            debug(LOG_ERR, "session pipe error: %d.  close pipe: %p", nret, sess);
+            RemovePipe(sess);   // todo: add onpipeclose
         }
-    } else if (nret < 0) {
-        OnBtmPipeError(mBtmPipe, nret);
+    } else if (nread < 0) {
+        OnBtmPipeError(mBtmPipe, nread);
     } else {
-        fprintf(stderr, "invalid data length, nread: %d\n", nret);
-        OnBtmPipeError(mBtmPipe, 0);
+        debug(LOG_ERR, "invalid data, nread: %d\n", nread);
     }
-
     return nret;
 }
 
-
-int BridgePipe::RemovePipe(IPipe *pipe) {
+int BridgePipe::RemovePipe(SessionPipe *pipe) {
     for (auto it = mTopPipes.begin(); it != mTopPipes.end(); it++) {
         if (it->second == pipe) {
             return doRemove(it);
         }
     }
-    fprintf(stderr, "failed to find and remove pipe: %p\n", pipe);
+    debug(LOG_ERR, "failed to find and remove pipe: %p\n", pipe);
     return 0;
 }
 
@@ -95,7 +96,7 @@ int BridgePipe::removeAll() {
     return 0;
 }
 
-int BridgePipe::doRemove(std::map<KeyType, IPipe *>::iterator it) {
+int BridgePipe::doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator it) {
     if (it != mTopPipes.end()) {
         mTopPipes.erase(it);
         IPipe *pipe = it->second;
@@ -107,39 +108,58 @@ int BridgePipe::doRemove(std::map<KeyType, IPipe *>::iterator it) {
     return 0;
 }
 
-IPipe *BridgePipe::FindPipe(ssize_t nread, const rbuf_t *buf) {
-    KeyType key = keyForRawData(nread, buf);
-//    return (!key.empty()) ? mTopPipes[key] : nullptr;  // bug!!!!
-    if (!key.empty()) {
-        auto it = mTopPipes.find(key);
-        return it != mTopPipes.end()? it->second: nullptr;
-    }
-    return nullptr;
+SessionPipe *BridgePipe::FindPipe(const SessionPipe::KeyType &key) const {
+    auto it = mTopPipes.find(key);
+    return it != mTopPipes.end() ? it->second : nullptr;
 }
 
+void BridgePipe::Start() {
+    IPipe::Start();
+    mBtmPipe->Start();
+}
 
 // if (key) must be true
-int BridgePipe::AddPipe(BridgePipe::KeyType key, IPipe *pipe) {
-    if (!key.empty() && pipe) {
+int BridgePipe::AddPipe(SessionPipe *pipe) {
+    if (pipe && !pipe->GetKey().empty()) {
+        const SessionPipe::KeyType &key = pipe->GetKey();
+
+        auto ret = mTopPipes.insert(std::make_pair(key, pipe));
+        debug(LOG_ERR, "key: %s, pipe1: %p, pipe2: %p, ok:%d", key.c_str(), pipe, mTopPipes[key], ret.second);
+        if (!ret.second) {
+            debug(LOG_ERR, "insert failed. duplicate pipe");
+            return -1;
+        }
+
         pipe->Init();
+        pipe->Start();
         auto out = std::bind(&BridgePipe::PSend, this, pipe, std::placeholders::_1, std::placeholders::_2);
         pipe->SetOutputCb(out);
 
-        auto err = std::bind(&BridgePipe::OnTopPipeError, this, std::placeholders::_1, std::placeholders::_2);
-        pipe->SetOnErrCb(err);
+        // no need cast. caputure parameter pipe
+        pipe->SetOnErrCb([this](IPipe *p, int err) {
+            SessionPipe *sess = dynamic_cast<SessionPipe *>(p);
 
-        auto ret = mTopPipes.insert(std::make_pair(key, pipe));
-        debug(LOG_INFO, "key: %s, pipe1: %p, pipe2: %p, ok:%d", key.c_str(), pipe, mTopPipes[key], ret.second);
+#ifndef NNDEBUG
+            this->OnTopPipeError(sess, err);
+#else
+            if (sess) {
+                this->OnTopPipeError(sess, err);
+            } else {
+                debug(LOG_ERR, "dynamic_cast failed");
+            }
+#endif
+        });
     }
+    return 0;
 }
 
 void BridgePipe::Flush(IUINT32 curr) {
-    cleanUseless();
     mBtmPipe->Flush(curr);  // normall this will not be necessary if btm pipe input data passively from other soruce
 
     for (auto &e: mTopPipes) {
         e.second->Flush(curr);
     }
+    cleanUseless();
 }
 
 void BridgePipe::cleanUseless() {
@@ -150,48 +170,37 @@ void BridgePipe::cleanUseless() {
     mUselessPipe.clear();
 }
 
-IPipe *BridgePipe::onFreshData(ssize_t nread, const rbuf_t *buf) {
-    assert(mFreshDataCb != nullptr);
-    return mFreshDataCb(nread, buf);
-}
 
-void BridgePipe::SetOnFreshDataCb(BridgePipe::OnFreshDataCb cb) {
-    mFreshDataCb = cb;
-}
-
-BridgePipe::KeyType BridgePipe::keyForRawData(ssize_t nread, const rbuf_t *data) {
-    assert(mHashFunc != nullptr);
-    return mHashFunc(nread, data);
-}
-
-void BridgePipe::OnTopPipeError(IPipe *pipe, int err) {
-    fprintf(stderr, "pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
+void BridgePipe::OnTopPipeError(SessionPipe *pipe, int err) {
+    debug(LOG_ERR, "pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
     RemovePipe(pipe);
 }
 
 void BridgePipe::OnBtmPipeError(IPipe *pipe, int err) {
     assert(pipe == mBtmPipe);   // typically sendto will not fail
-    fprintf(stderr, "btm pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
+    debug(LOG_ERR, "btm pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
     OnError(this, err);
 }
 
-void BridgePipe::SetHashRawDataFunc(BridgePipe::HashFunc fn) {
-    mHashFunc = fn;
-}
-
-int BridgePipe::PSend(IPipe *pipe, ssize_t nread, const rbuf_t *buf) {
-    if (nread < 0) {    // error occurs. eof or other
+int BridgePipe::PSend(SessionPipe *pipe, ssize_t nread, const rbuf_t *buf) {
+    if (nread > 0) {
+        return Send(nread, buf);
+    } else if (nread < 0) {    // error occurs. eof or other
         OnTopPipeError(pipe, nread);
         return nread;
-    } else if (nread == 0) {    // do nothing
-        return 0;
-    } else {
-        int n = Send(nread, buf);
-        if (n < 0) {
-            debug(LOG_ERR, "failed to send data. nread: %d, pipe: %p\n", nread, pipe);
-            OnTopPipeError(pipe, n);    // just close this pipe
-        }
-        return n;
     }
+
+    return 0;
+}
+
+SessionPipe *BridgePipe::onCreateNewPipe(const SessionPipe::KeyType &key, void *addr) {
+    if (mCreateNewPipeCb) {
+        return mCreateNewPipeCb(key, addr);
+    }
+    return nullptr;
+}
+
+void BridgePipe::SetOnCreateNewPipeCb(const OnCreatePipeCb &cb) {
+    mCreateNewPipeCb = cb;
 }
 

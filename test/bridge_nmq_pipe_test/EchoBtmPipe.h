@@ -11,8 +11,6 @@
 
 class EchoBtmPipe : public IPipe {
 public:
-    int Init() override;
-
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
     int Close() override;
