@@ -16,16 +16,18 @@ ITopContainerPipe::~ITopContainerPipe() {
 }
 
 int ITopContainerPipe::Init() {
-    mTopPipe->Init();
-    auto send = std::bind(&ITopContainerPipe::Send, this, _1, _2);
-    mTopPipe->SetOutputCb(send);
+    if (mTopPipe) {
+        mTopPipe->Init();
+        auto send = std::bind(&ITopContainerPipe::Send, this, _1, _2);
+        mTopPipe->SetOutputCb(send);
 
-    auto recv = std::bind(&IPipe::Input, mTopPipe, _1, _2);
-    SetOnRecvCb(recv);
+        auto recv = std::bind(&IPipe::Input, mTopPipe, _1, _2);
+        SetOnRecvCb(recv);
 
-    mTopPipe->SetOnErrCb([this] (IPipe *pipe, int err) {
-        this->OnError((IPipe*)this, err);
-    });
+        mTopPipe->SetOnErrCb([this] (IPipe *pipe, int err) {
+            this->OnError((IPipe*)this, err);
+        });
+    }
 
     return IPipe::Init();
 }
@@ -48,5 +50,15 @@ IPipe* ITopContainerPipe::topPipe() {
 }
 
 void ITopContainerPipe::Flush(IUINT32 curr) {
-    mTopPipe->Flush(curr);
+    if (mTopPipe) {
+        mTopPipe->Flush(curr);
+    }
+}
+
+void ITopContainerPipe::BlockTop() {
+    if (mTopPipe) {
+        mTopPipe->SetOutputCb(nullptr);
+        SetOnRecvCb(nullptr);
+        mTopPipe->SetOnErrCb(nullptr);
+    }
 }

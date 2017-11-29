@@ -8,6 +8,7 @@ int RApp::Main(int argc, char **argv) {
     Config conf;
     conf.isServer = isServer();
     conf.parse(argc, argv);
+
     return Loop(conf);
 }
 

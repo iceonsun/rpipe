@@ -40,8 +40,8 @@ int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
         req->addr = static_cast<sockaddr *>(buf->data);
 
         struct sockaddr_in *addr = reinterpret_cast<sockaddr_in *>(req->addr);
-//        debug(LOG_ERR, "req: %p. send %d bytes to %s:%d. curr: %d.", req, nread, inet_ntoa(addr->sin_addr),
-//              ntohs(addr->sin_port), iclock() % 10000);
+        debug(LOG_ERR, "req: %p. send %d bytes to %s:%d. curr: %d.", req, nread, inet_ntoa(addr->sin_addr),
+              ntohs(addr->sin_port), iclock() % 10000);
 
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(req), mDgram, &req->buf, 1,
                     reinterpret_cast<const sockaddr *>(req->addr), send_cb);
@@ -50,7 +50,7 @@ int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
 }
 
 void BtmDGramPipe::send_cb(uv_udp_send_t *req, int status) {
-//    debug(LOG_ERR, "req: %p, status: %d, error: %s\n", req, status, status ? uv_strerror(status) : "");
+    debug(LOG_ERR, "req: %p, status: %d, error: %s, curr: %d\n", req, status, status ? uv_strerror(status) : "", iclock() % 10000);
     auto send = reinterpret_cast<rudp_send_t *>(req);
     auto pipe = (BtmDGramPipe *) send->udp_send.data;
     send->udp_send.data = nullptr;

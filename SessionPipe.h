@@ -48,15 +48,16 @@ protected:
 
     void onPeerEof();
     void onSelfEof();
+    void onPeerRst();
 
-private:
-    static int decodeConv(const KeyType &key);
-
-    void timer_cb(void *arg);
-
+    void notifyPeerClose(char cmd = FIN);
     void timeoutToClose();
 
-    void notifyPeerClose();
+    static int decodeConv(const KeyType &key);
+
+
+private:
+    void timer_cb(void *arg);
 
     int doSend(ssize_t nread, const rbuf_t *buf);
 

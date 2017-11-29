@@ -16,9 +16,9 @@ IPipe::~IPipe() {
 }
 
 int IPipe::Output(ssize_t nread, const rbuf_t *buf) {
-//    if (mOutputCb) {
+    if (mOutputCb) {
         return mOutputCb(nread, buf);
-//    }
+    }
     return -1;
 }
 

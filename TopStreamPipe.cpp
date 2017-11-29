@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <syslog.h>
+#include <util.h>
 #include "TopStreamPipe.h"
 #include "debug.h"
 
@@ -50,7 +51,7 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
 
 #ifndef NNDEBUG
     if (nread > 0) {
-        debug(LOG_ERR, "read %d bytes: %.*s", nread, nread, buf);
+        debug(LOG_ERR, "read %d bytes: %.*s. curr: %d", nread, nread, buf, iclock() % 10000);
     }
 #endif
 
@@ -63,6 +64,7 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
 }
 
 void TopStreamPipe::close_cb(uv_handle_t *handle) {
+    debug(LOG_ERR, "topstream closed.");
     free(handle);
 }
 

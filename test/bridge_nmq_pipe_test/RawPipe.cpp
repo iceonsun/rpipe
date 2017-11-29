@@ -8,7 +8,7 @@
 
 int RawPipe::OnRecv(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {
-        printf("recv %d bytes: %.*s\n", nread, nread, buf->base);
+        debug(LOG_ERR, "recv %d bytes: %.*s\n", nread, nread, buf->base);
     } else {
         debug(LOG_ERR, "failed to recv");
     }

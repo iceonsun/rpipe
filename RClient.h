@@ -27,13 +27,15 @@ public:
     BridgePipe *CreateBridgePipe(const Config &conf) override;
 
     IPipe *CreateBtmPipe(const Config &conf) override;
-
+    virtual SessionPipe * OnRawData(const SessionPipe::KeyType &key, const void *addr);
 protected:
 
     virtual uv_handle_t *InitTcpListen(const Config &conf);
+
 //    uv_handle_t *CreateListenHandle(const Config &conf) override;
 
 private:
+    static const int A_RRIME = 6173;
 
     virtual void onNewClient(uv_stream_t *client);
 

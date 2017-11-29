@@ -53,7 +53,7 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
     if (nread >= SessionPipe::HEAD_LEN) {
         SessionPipe::KeyType key = SessionPipe::BuildKey(nread, buf);
         SessionPipe *sess = FindPipe(key);
-        debug(LOG_ERR, "key: %s", key.c_str());
+        debug(LOG_ERR, "key: %s, sess: %p", key.c_str(), sess);
         if (SessionPipe::IsCloseSignal(nread, buf)) {
             if (!sess) {    // if doesn't exist. we do nothing. otherwise we pass it to sessppe.
                 return 0;
@@ -64,6 +64,7 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
                 if (!sess) {
                     return 0;   // dont' create pipe
                 }
+                AddPipe(sess);
             }
         }
         nret = sess->Input(nread, buf);
@@ -80,12 +81,12 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
 }
 
 int BridgePipe::RemovePipe(SessionPipe *pipe) {
+    debug(LOG_ERR, "remove pipe: %p\n", pipe);
     for (auto it = mTopPipes.begin(); it != mTopPipes.end(); it++) {
         if (it->second == pipe) {
             return doRemove(it);
         }
     }
-    debug(LOG_ERR, "failed to find and remove pipe: %p\n", pipe);
     return 0;
 }
 

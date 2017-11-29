@@ -14,6 +14,8 @@
 #include "BtmDGramPipe.h"
 #include "NMQPipe.h"
 #include "TopStreamPipe.h"
+#include "UdpBtmPipe.h"
+#include "RstSessionPipe.h"
 
 int RServer::Loop(Config &conf) {
     conf.param.localListenIface = "127.0.0.1";
@@ -62,9 +64,11 @@ BridgePipe *RServer::CreateBridgePipe(const Config &conf) {
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
         uv_stop(this->mLoop);
     });
-    bridge->SetOnCreateNewPipeCb([this](const SessionPipe::KeyType& key, const void *addr) -> SessionPipe * {
-        return this->OnRawData(key, addr);
-    });
+    auto fn = std::bind(&RServer::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
+//    bridge->SetOnCreateNewPipeCb([this](const SessionPipe::KeyType& key, const void *addr) -> SessionPipe * {
+//        return this->OnRawData(key, addr);
+//    });
+    bridge->SetOnCreateNewPipeCb(fn);
 
     bridge->Init();
     return bridge;
@@ -78,6 +82,18 @@ IPipe *RServer::CreateBtmPipe(const Config &conf) {
     }
     return nullptr;
 }
+
+//IPipe *RServer::CreateBtmPipe(const Config &conf) {
+//    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//    struct sockaddr_in addr;
+//    uv_ip4_addr(mConf.param.localListenIface, mConf.param.localListenPort, &addr);
+//    int n = bind(sock, reinterpret_cast<const sockaddr *>(&addr), sizeof(addr));
+//    if (n) {
+//        debug(LOG_ERR, "bind failed %s", strerror(n));
+//        assert(n == 0);
+//    }
+//    return new UdpBtmPipe(sock, mLoop);
+//}
 
 uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     uv_udp_t *udp = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
@@ -101,9 +117,10 @@ SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *add
         // do this synchronously. todo: do this asynchronously. create a data pool for pending data.
         int nret = connect(sock, reinterpret_cast<const sockaddr *>(&mTargetAddr), sizeof(mTargetAddr));
         if (nret) {
+            SessionPipe *sess = new RstSessionPipe(nullptr, nullptr, key, static_cast<const sockaddr_in *>(addr));
             fprintf(stderr, "failed to connect %s: %d: %s\n", inet_ntoa(mTargetAddr.sin_addr),
                     ntohs(mTargetAddr.sin_port), strerror(errno));
-            return nullptr;
+            return sess;
         }
         uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
         uv_tcp_init(mLoop, tcp);
@@ -125,7 +142,7 @@ SessionPipe *RServer::CreateStreamPipe(uv_stream_t *conn, const SessionPipe::Key
     SessionPipe *sess = new SessionPipe(nmq, mLoop, key, addr);
 
     debug(LOG_INFO, "sess pipe: %p", sess);
-    mBrigde->AddPipe(sess);
+//    mBrigde->AddPipe(sess);
     return sess;
 }
 

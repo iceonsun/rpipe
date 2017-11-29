@@ -8,6 +8,7 @@
 NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
     mConv = conv;
 }
+
 NMQPipe::~NMQPipe() {
     debug(LOG_ERR, "");
 }
@@ -44,12 +45,14 @@ int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
         if (nret > 0) {
             mSndTot += nret;
         }
-        nmq_flush(mNmq, iclock());
+        nmq_flush(mNmq, iclock());  // todo: check if necessary
         debug(LOG_ERR, "nmq_send %d bytes. ret: %d. curr: %d", nread, nret, iclock() % 10000);
     } else if (nread < 0) {
-//        nmq_update(mNmq, iclock()); // sending remaining data
-        nmq_flush(mNmq, iclock());
-        Output(nread, buf); // this means report error: nread
+        debug(LOG_ERR, "err state: %d", nread);
+        BlockTop();
+        mErrState = nread;
+        nmq_shutdown_send(mNmq, nmqShutdownCb);
+//        Output(nread, buf); // this means report error: nread
     }
     return nret;
 }
@@ -61,17 +64,14 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {
         // omit allocating buf here. becuase we know nmq will not reuse buf.
         nret = nmq_input(mNmq, buf->base, nread);
-        nmq_flush(mNmq, iclock()); // todo: check if necessary or better place
+        if (NMQ_ERR_CONV_DIFF == nret) {
+            debug(LOG_ERR, "self conv: %u, data conv: %u", mConv, nmq_get_conv(buf->base));
+            return NMQ_ERR_CONV_DIFF;
+        }   // other error just ignore it
+//        nmq_flush(mNmq, iclock()); // todo: check if necessary or better place
         debug(LOG_INFO, "nmq_input %d bytes. ret: %d, current: %d", nread, nret, iclock() % 10000);
         if (nret >= 0) {
             int n = nmqRecv(mNmq);
-            if (n < 0) {
-                if (NMQ_ERR_CONV_DIFF == n) {
-                    debug(LOG_ERR, "self conv: %u, data conv: %u", mConv, nmq_get_conv(buf->base));
-                    return NMQ_ERR_CONV_DIFF;
-                }   // other error just ignore it
-                return 0;
-            }
             return n;
         }
     }
@@ -87,7 +87,7 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         rbuf_t buf = {0};
         buf.base = const_cast<char *>(data);   // caution!! reuse ptr
         buf.len = len;
-        debug(LOG_INFO, "nmqOutputCb, %d bytes", len);
+        debug(LOG_INFO, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
         nret = pipe->Output(len, &buf);
     }
 
@@ -115,18 +115,24 @@ int NMQPipe::nmqRecv(NMQ *nmq) {
             break;
         }
     }
-    nmq_flush(mNmq, iclock());
-    if (NMQ_ERR_MSG_SIZE == nret) {
-        debug(LOG_ERR, "recv buf size to small. cannot receive. need to extend it.");
+    if (nret < 0) {
+        debug(LOG_ERR, "nmq_recv error: %d", nret);
     }
-    debug(LOG_ERR, "nret: %d. q->rcv_nxt: %u, q->nrcv_buf: %u, q->nrcv_que: %u", nret, mNmq->rcv_nxt, mNmq->nrcv_buf, mNmq->nrcv_que);
     return n < 0 ? n : tot;
 }
 
 void NMQPipe::Flush(IUINT32 curr) {
     ITopContainerPipe::Flush(curr);
     nmq_flush(mNmq, curr);
-//    nmq_flush(mNmq, curr);
-//    nmqRecv(mNmq);
-//    debug(LOG_ERR, "current: %d", iclock() % 10000);
+//    nmq_update(mNmq, curr);
+}
+
+void NMQPipe::nmqShutdownCb(NMQ *q) {
+    NMQPipe *pipe = static_cast<NMQPipe *>(q->arg);
+    pipe->nmqSendDone();
+}
+
+void NMQPipe::nmqSendDone() {
+    rbuf_t rbuf;
+    Output(mErrState, &rbuf);
 }

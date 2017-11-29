@@ -22,6 +22,9 @@ public:
     // new methods
     virtual IPipe* topPipe();
 
+    virtual void BlockTop();
+
+
 private:
     IPipe *mTopPipe;
 };

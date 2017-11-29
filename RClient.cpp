@@ -10,11 +10,15 @@
 #include "RClient.h"
 #include "TopStreamPipe.h"
 #include "NMQPipe.h"
+#include "UdpBtmPipe.h"
+#include "RstSessionPipe.h"
+
 
 RClient::~RClient() {
 }
 
 int RClient::Loop(Config &conf) {
+//    mConv = iclock() % A_RRIME;   todo: add this later
     conf.param.localListenPort = 10010;
     conf.param.localListenIface = "127.0.0.1";
 
@@ -46,11 +50,16 @@ int RClient::Loop(Config &conf) {
     return 0;
 }
 
-IPipe *RClient::CreateBtmPipe(const Config &conf) {
-    uv_udp_t *dgram = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
-    uv_udp_init(mLoop, dgram);
+//IPipe *RClient::CreateBtmPipe(const Config &conf) {
+//    uv_udp_t *dgram = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
+//    uv_udp_init(mLoop, dgram);
+//
+//    return new BtmDGramPipe(dgram);
+//}
 
-    return new BtmDGramPipe(dgram);
+IPipe *RClient::CreateBtmPipe(const Config &conf) {
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    return new UdpBtmPipe(sock, mLoop);
 }
 
 void RClient::close_cb(uv_handle_t *handle) {
@@ -94,7 +103,7 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
     }
 
     if (nret) {
-        debug(LOG_ERR, "failed to start, err: %d\n", nret);
+        debug(LOG_ERR, "failed to start, err: %s\n", uv_strerror(nret));
         tcp = nullptr;
     }
 
@@ -128,7 +137,7 @@ void RClient::onNewClient(uv_stream_t *client) {
     IPipe *top = new TopStreamPipe(client);
     IPipe *nmq = new NMQPipe(mConv, top);   // nmq pipe addr
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, &mTargetAddr);
-    sess->SetExpireIfNoOps(10); // todo: fill value from conf
+    sess->SetExpireIfNoOps(20); // todo: fill value from conf
 
     mBridge->AddPipe(sess);
 }
@@ -141,7 +150,8 @@ BridgePipe *RClient::CreateBridgePipe(const Config &conf) {
     }
 
     auto *pipe = new BridgePipe(btmPipe);
-    pipe->SetOnCreateNewPipeCb(nullptr);    // explicitly set cb. ignore unknown data
+    auto fn = std::bind(&RClient::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
+    pipe->SetOnCreateNewPipeCb(fn);    // explicitly set cb. ignore unknown data
 
     pipe->SetOnErrCb([this](IPipe *pipe, int err) {
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
@@ -155,4 +165,8 @@ void RClient::Flush() {
     mBridge->Flush(iclock());
 }
 
+SessionPipe *RClient::OnRawData(const SessionPipe::KeyType &key, const void *addr) {
+    SessionPipe *sess = new RstSessionPipe(nullptr, nullptr, key, static_cast<const sockaddr_in *>(addr));
+    return sess;
+}
 

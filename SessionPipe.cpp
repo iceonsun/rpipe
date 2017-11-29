@@ -41,6 +41,7 @@ void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
     }
     debug(LOG_ERR, "set timeout. sec: %d. current: %d", sec, time(0));
 
+    assert(mLoop != nullptr);
     mRepeatTimer = new RTimer(mLoop);
 
     if (sec > 0) {
@@ -70,9 +71,11 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
         if (key != mKey) {
             debug(LOG_ERR, "conv doesn't match");
             return 0;
-        } else if (cmd == FIN || cmd == RST) {
+        } else if (cmd == FIN) {
             onPeerEof();
             return nread;
+        } else if (cmd == RST) {
+            onPeerRst();
         } else {
             rbuf_t rbuf = {0};
             rbuf.base = const_cast<char *>(p);
@@ -99,6 +102,7 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
         }
         return nret;
     } else if (nread < 0) {
+        debug(LOG_ERR, "err state: %d", nread);
         if (nread == UV_EOF) {
             onSelfEof();
             return nread;
@@ -116,7 +120,7 @@ int SessionPipe::Close() {
 
     if (mRepeatTimer) {
         mRepeatTimer->Stop();
-        free(mRepeatTimer);
+        delete mRepeatTimer;
         mRepeatTimer = nullptr;
     }
 
@@ -143,10 +147,10 @@ int SessionPipe::IsCloseSignal(ssize_t nread, const rbuf_t *buf) {
     return 0;
 }
 
-void SessionPipe::notifyPeerClose() {
+void SessionPipe::notifyPeerClose(char cmd) {
     rbuf_t rbuf = {0};
     char base[HEAD_LEN] = {0};
-    ssize_t n = insertHead(base, HEAD_LEN, FIN, mConv);
+    ssize_t n = insertHead(base, HEAD_LEN, cmd, mConv);
     rbuf.base = base;
     rbuf.data = mAddr;
     ITopContainerPipe::Send(n, &rbuf);
@@ -224,16 +228,19 @@ int SessionPipe::decodeConv(const SessionPipe::KeyType &key) {
     }
     return static_cast<int>(conv);
 }
-
+// flush is forbidden here. it may cause recursion and stackoverflow
 void SessionPipe::onPeerEof() {
-    debug(LOG_ERR, "peer eof. ignore close self.");
-    Flush(iclock());
+    debug(LOG_ERR, "onPeerEof.");
     OnError(this, UV_EOF);  // report error and close
 }
 
 void SessionPipe::onSelfEof() {
-    debug(LOG_ERR, "EOF. ignore and not close peer. curr: %d", iclock() % 10000);
-    Flush(iclock());
+    debug(LOG_ERR, "onSelfEof. curr: %d", iclock() % 10000);
     notifyPeerClose();
     OnError(this, UV_EOF);  // 注释掉以后继续发。观察关掉本段后，对面的情况.
+}
+
+void SessionPipe::onPeerRst() {
+    debug(LOG_ERR, "peer rst");
+    OnError(this, UV_EOF);
 }
