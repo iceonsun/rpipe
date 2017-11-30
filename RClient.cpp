@@ -22,10 +22,10 @@ int RClient::Loop(Config &conf) {
     conf.param.localListenPort = 10010;
     conf.param.localListenIface = "127.0.0.1";
 
-//    conf.param.targetIp = "127.0.0.1";
-//    conf.param.targetPort = 10011;
-    conf.param.targetIp = "47.95.217.247";
-    conf.param.targetPort = 24680;
+    conf.param.targetIp = "127.0.0.1";
+    conf.param.targetPort = 10011;
+//    conf.param.targetIp = "47.95.217.247";
+//    conf.param.targetPort = 24680;
     mLoop = uv_default_loop();
     int nret = uv_ip4_addr(conf.param.targetIp, conf.param.targetPort, &mTargetAddr);
     if (nret != 0) {

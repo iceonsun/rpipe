@@ -31,6 +31,7 @@ protected:
     static IINT32 nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg);
     static void nmqShutdownCb(NMQ *q);
     void nmqSendDone();
+    void nmqRecvDone();
 
 private:
     int nmqRecv(NMQ *nmq);

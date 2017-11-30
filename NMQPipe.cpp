@@ -82,13 +82,16 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
     assert(len > 0);
 
     int nret = -1;
+    auto pipe = static_cast<NMQPipe *>(nmq->arg);
     if (len > 0) {
-        auto pipe = static_cast<NMQPipe *>(nmq->arg);
         rbuf_t buf = {0};
         buf.base = const_cast<char *>(data);   // caution!! reuse ptr
         buf.len = len;
         debug(LOG_INFO, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
         nret = pipe->Output(len, &buf);
+    } else if (len == NMQ_EOF) {
+        pipe->nmqRecvDone();
+        nret = 0;
     }
 
     return nret;
@@ -133,6 +136,13 @@ void NMQPipe::nmqShutdownCb(NMQ *q) {
 }
 
 void NMQPipe::nmqSendDone() {
+    debug(LOG_ERR, "nmq send done.");
     rbuf_t rbuf;
     Output(mErrState, &rbuf);
+}
+
+void NMQPipe::nmqRecvDone() {
+    debug(LOG_ERR, "nmq recv done.");
+    rbuf_t rbuf;
+    Output(UV_EOF, &rbuf);
 }
