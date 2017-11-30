@@ -88,7 +88,7 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         debug(LOG_INFO, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
         nret = pipe->Output(len, &buf);
     } else if (len == NMQ_EOF) {
-        pipe->nmqRecvDone();
+        pipe->nmqRecvPeerDone();
         nret = 0;
     } else {
         debug(LOG_ERR, "unrecognized len: %d", len);
@@ -141,7 +141,8 @@ void NMQPipe::nmqSendDone() {
     Output(mErrState, &rbuf);
 }
 
-void NMQPipe::nmqRecvDone() {
+void NMQPipe::nmqRecvPeerDone() {
+    nmqRecv(mNmq);  // recv them all
     debug(LOG_ERR, "nmq recv done.");
     rbuf_t rbuf;
     Output(UV_EOF, &rbuf);

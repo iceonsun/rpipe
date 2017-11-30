@@ -27,6 +27,8 @@ public:
 
     virtual IPipe *CreateBtmPipe(const Config &conf) = 0;
 
+    const static int RBUF_SIZE = 1450;
+
 protected:
     static void flush_cb(uv_timer_t *handle);
 

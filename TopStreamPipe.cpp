@@ -5,6 +5,7 @@
 #include <cassert>
 #include <syslog.h>
 #include <util.h>
+#include <nmq.h>
 #include "TopStreamPipe.h"
 #include "debug.h"
 
@@ -59,7 +60,25 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
     rbuf.base = buf->base;
     rbuf.len = nread;
 
-    pipe->Output(nread, &rbuf);
+    if (nread > 0) {
+        rbuf_t tmp;
+        tmp.base = buf->base;
+        tmp.len = buf->len;
+
+        ssize_t nleft = nread;
+        while (nleft > 0) {
+            ssize_t n = nleft;
+            if (n > NMQ_MSS_DEF) {
+                n = NMQ_MSS_DEF;
+            }
+            tmp.base = buf->base + (nread - nleft);
+            nleft -= n;
+            pipe->Output(n, &tmp);
+        }
+    } else {
+        pipe->Output(nread, &rbuf);
+    }
+
     free(rbuf.base);
 }
 
