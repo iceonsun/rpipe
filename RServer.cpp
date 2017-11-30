@@ -119,7 +119,7 @@ SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *add
         if (nret) {
             SessionPipe *sess = new RstSessionPipe(nullptr, nullptr, key, static_cast<const sockaddr_in *>(addr));
             fprintf(stderr, "failed to connect %s: %d: %s\n", inet_ntoa(mTargetAddr.sin_addr),
-                    ntohs(mTargetAddr.sin_port), strerror(errno));
+                    ntohs(mTargetAddr.sin_port), strerror(nret));
             return sess;
         }
         uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
@@ -137,7 +137,10 @@ SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *add
 
 SessionPipe *RServer::CreateStreamPipe(uv_stream_t *conn, const SessionPipe::KeyType &key, const void *arg) {
     IPipe *top = new TopStreamPipe(conn);
-    NMQPipe *nmq = new NMQPipe(++mConv, top);
+    // bug here. mConv should match conv in key
+    IUINT32 conv = SessionPipe::ConvFromKey(key);
+    NMQPipe *nmq = new NMQPipe(conv, top);
+//    NMQPipe *nmq = new NMQPipe(++mConv, top);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     SessionPipe *sess = new SessionPipe(nmq, mLoop, key, addr);
 

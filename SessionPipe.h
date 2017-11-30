@@ -38,8 +38,10 @@ public:
 
     static int IsCloseSignal(ssize_t nread, const rbuf_t *buf);
 
-    static inline KeyType BuildKey(ssize_t nread, const rbuf_t *rbuf);
-    static inline KeyType BuildKey(int conv, const struct sockaddr_in *addr);
+    // if declared static inline, cannot compile
+    static KeyType BuildKey(ssize_t nread, const rbuf_t *rbuf);
+    static KeyType BuildKey(int conv, const struct sockaddr_in *addr);
+    static IUINT32 ConvFromKey(const KeyType& key);
 
 protected:
     static inline ssize_t insertHead(char *base, int len, char cmd, IUINT32 conv);

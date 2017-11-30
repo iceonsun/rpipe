@@ -5,6 +5,7 @@
 #include <cassert>
 #include <syslog.h>
 #include <sstream>
+#include <string>
 #include <nmq.h>
 #include <enc.h>
 #include "SessionPipe.h"
@@ -212,6 +213,16 @@ SessionPipe::KeyType SessionPipe::BuildKey(ssize_t nread, const rbuf_t *rbuf) {
 //#endif
 }
 
+
+IUINT32 SessionPipe::ConvFromKey(const SessionPipe::KeyType &key) {
+    if (!key.empty()) {
+        ssize_t pos = key.rfind(':');
+        if (pos != std::string::npos) {
+            return std::stoul(key.substr(pos+1));
+        }
+    }
+    return 0;
+}
 
 SessionPipe::KeyType SessionPipe::GetKey() {
     return mKey;
