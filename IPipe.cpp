@@ -8,10 +8,6 @@
 #include "debug.h"
 
 IPipe::~IPipe() {
-//    if (mAddr) {
-//        free(mAddr);
-//        mAddr = nullptr;
-//    }
     debug(LOG_INFO, "");
 }
 
@@ -54,17 +50,3 @@ void IPipe::OnError(IPipe *pipe, int err) {
 void IPipe::SetOnErrCb(const ErrCb &cb) {
     mErrCb = cb;
 }
-//void IPipe::SetTargetAddr(const sockaddr_in *target) {
-//    if (!target) {
-//        fprintf(stderr, "target is nulll!\n");
-//        return;
-//    }
-//
-//    if (mAddr) {
-//        fprintf(stderr, "cannot set addr twice!\n");
-//        return;
-//    }
-//
-//    mAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
-//    memcpy(mAddr, target, sizeof(struct sockaddr_in));
-//}

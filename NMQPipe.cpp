@@ -79,8 +79,6 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
 }
 
 IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg) {
-    assert(len > 0);
-
     int nret = -1;
     auto pipe = static_cast<NMQPipe *>(nmq->arg);
     if (len > 0) {
@@ -92,6 +90,8 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
     } else if (len == NMQ_EOF) {
         pipe->nmqRecvDone();
         nret = 0;
+    } else {
+        debug(LOG_ERR, "unrecognized len: %d", len);
     }
 
     return nret;

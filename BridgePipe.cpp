@@ -42,8 +42,8 @@ int BridgePipe::Close() {
         mBtmPipe = nullptr;
     }
 
-    if (!mUselessPipe.empty()) {
-        cleanUseless();
+    if (!mErrPipes.empty()) {
+        cleanErrPipes();
     }
     return 0;
 }
@@ -60,6 +60,8 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
             }
         } else {
             if (!sess) {
+                // for client. unknown pipe should cause rst to peer.
+                // for server. unknown pipe should cause new pipe created and persisted.
                 sess = onCreateNewPipe(key, buf->data);
                 if (!sess) {
                     return 0;   // dont' create pipe
@@ -81,12 +83,12 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
 }
 
 int BridgePipe::RemovePipe(SessionPipe *pipe) {
-    debug(LOG_ERR, "remove pipe: %p\n", pipe);
-    for (auto it = mTopPipes.begin(); it != mTopPipes.end(); it++) {
-        if (it->second == pipe) {
-            return doRemove(it);
-        }
+    auto it = mTopPipes.find(pipe->GetKey());
+    if (it == mTopPipes.end()) {
+        debug(LOG_ERR, "pipe %p don't belong to bridge pipe.", pipe);
     }
+    doRemove(it);
+
     return 0;
 }
 
@@ -99,12 +101,20 @@ int BridgePipe::removeAll() {
 
 int BridgePipe::doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator it) {
     if (it != mTopPipes.end()) {
-        mTopPipes.erase(it);
+//        mTopPipes.erase(it);
+        debug(LOG_ERR, "remove pipe: %p\n", it->second);
         IPipe *pipe = it->second;
         pipe->SetOutputCb(nullptr);
         pipe->SetOnErrCb(nullptr);
 
-        mUselessPipe.push_back(it->second);
+        mErrPipes.insert(*it);
+//        mUselessPipe.push_back(it->second);
+    } else {
+#ifndef NNDEBUG
+        assert(it != mTopPipes.end());
+#else
+        debug(LOG_ERR, "pipe don't belong to bridge pipe: key: %s, %p", it->first.c_str(), it->second);
+#endif
     }
     return 0;
 }
@@ -155,20 +165,24 @@ int BridgePipe::AddPipe(SessionPipe *pipe) {
 }
 
 void BridgePipe::Flush(IUINT32 curr) {
+    cleanErrPipes();
     mBtmPipe->Flush(curr);  // normall this will not be necessary if btm pipe input data passively from other soruce
 
+    cleanErrPipes();
     for (auto &e: mTopPipes) {
         e.second->Flush(curr);
     }
-    cleanUseless();
+    cleanErrPipes();
 }
 
-void BridgePipe::cleanUseless() {
-    for (auto p: mUselessPipe) {
-        p->Close();
-        delete p;
+void BridgePipe::cleanErrPipes() {
+    for (auto &e: mErrPipes) {
+        auto it = mTopPipes.find(e.first);
+        mTopPipes.erase(it);
+        e.second->Close();
+        delete e.second;
     }
-    mUselessPipe.clear();
+    mErrPipes.clear();
 }
 
 

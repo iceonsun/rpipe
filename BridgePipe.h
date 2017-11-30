@@ -54,11 +54,11 @@ private:
 
     int removeAll();
 
-    inline void cleanUseless();
+    inline void cleanErrPipes();
 
     std::map<SessionPipe::KeyType, SessionPipe *> mTopPipes;
+    std::map<SessionPipe::KeyType, SessionPipe *> mErrPipes;
     IPipe *mBtmPipe;
-    std::list<SessionPipe *> mUselessPipe;
     OnCreatePipeCb mCreateNewPipeCb;
 };
 

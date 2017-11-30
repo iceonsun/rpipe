@@ -246,8 +246,8 @@ void SessionPipe::onPeerEof() {
 }
 
 void SessionPipe::onSelfEof() {
-    debug(LOG_ERR, "onSelfEof. curr: %d", iclock() % 10000);
-    notifyPeerClose();
+    debug(LOG_ERR, "onSelfEof. close self. don't close peer. curr: %d", iclock() % 10000);
+//    notifyPeerClose();
     OnError(this, UV_EOF);  // 注释掉以后继续发。观察关掉本段后，对面的情况.
 }
 
