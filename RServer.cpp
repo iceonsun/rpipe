@@ -9,16 +9,17 @@
 
 #include <unistd.h>
 
-#include "util.h"
+#include "FdUtil.h"
 #include "RServer.h"
 #include "BtmDGramPipe.h"
 #include "NMQPipe.h"
 #include "TopStreamPipe.h"
 #include "UdpBtmPipe.h"
 #include "RstSessionPipe.h"
+#include "TcpRdWriter.h"
 
 int RServer::Loop(Config &conf) {
-    conf.param.localListenIface = "127.0.0.1";
+    conf.param.localListenIface = "0.0.0.0";
     conf.param.localListenPort = 10011;
 
     conf.param.targetIp = "127.0.0.1";
@@ -100,7 +101,9 @@ uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     uv_udp_init(mLoop, udp);
     struct sockaddr_in addr = {0};
     uv_ip4_addr(conf.param.localListenIface, conf.param.localListenPort, &addr);
-    debug(LOG_INFO, "server, listening on udp: %s:%d", conf.param.localListenIface, conf.param.localListenPort);
+    debug(LOG_ERR, "server, listening on udp: %s:%d", conf.param.localListenIface, conf.param.localListenPort);
+    debug(LOG_ERR, "target tcp, %s:%d", conf.param.targetIp, conf.param.targetPort);
+
     int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, UV_UDP_REUSEADDR);
     if (nret) {
         fprintf(stderr, "bind error: %s\n", uv_strerror(nret));
@@ -122,29 +125,20 @@ SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *add
                     ntohs(mTargetAddr.sin_port), strerror(nret));
             return sess;
         }
-        uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
-        uv_tcp_init(mLoop, tcp);
-        nret = uv_tcp_open(tcp, sock);
-        if (nret) {
-            free(tcp);
-            close(sock);
-        }
-        return CreateStreamPipe(reinterpret_cast<uv_stream_t *>(tcp), key, addr);
-
+        return CreateStreamPipe(sock, key, addr);
     }
     return nullptr;
 }
 
-SessionPipe *RServer::CreateStreamPipe(uv_stream_t *conn, const SessionPipe::KeyType &key, const void *arg) {
-    IPipe *top = new TopStreamPipe(conn);
+SessionPipe *RServer::CreateStreamPipe(int sock, const SessionPipe::KeyType &key, const void *arg) {
+    IRdWriter *rdWriter = new TcpRdWriter(sock, mLoop);
     // bug here. mConv should match conv in key
     IUINT32 conv = SessionPipe::ConvFromKey(key);
-    NMQPipe *nmq = new NMQPipe(conv, top);
-//    NMQPipe *nmq = new NMQPipe(++mConv, top);
+    NMQPipe *nmq = new NMQPipe(conv, rdWriter);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     SessionPipe *sess = new SessionPipe(nmq, mLoop, key, addr);
 
-    debug(LOG_INFO, "sess pipe: %p", sess);
+    debug(LOG_ERR, "sess pipe: %p", sess);
 //    mBrigde->AddPipe(sess);
     return sess;
 }

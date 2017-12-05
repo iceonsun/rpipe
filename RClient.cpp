@@ -12,6 +12,7 @@
 #include "NMQPipe.h"
 #include "UdpBtmPipe.h"
 #include "RstSessionPipe.h"
+#include "TcpRdWriter.h"
 
 
 RClient::~RClient() {
@@ -63,10 +64,6 @@ IPipe *RClient::CreateBtmPipe(const Config &conf) {
     return new UdpBtmPipe(sock, mLoop);
 }
 
-void RClient::close_cb(uv_handle_t *handle) {
-    free(handle);
-}
-
 void RClient::Close() {
     if (mBridge) {
         mBridge->SetOnCreateNewPipeCb(nullptr);
@@ -99,13 +96,16 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
         }
     } else {
         debug(LOG_ERR, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface, conf.param.localListenPort,
-                uv_strerror(nret));
+              uv_strerror(nret));
         free(tcp);
     }
 
     if (nret) {
         debug(LOG_ERR, "failed to start, err: %s\n", uv_strerror(nret));
         tcp = nullptr;
+    } else {
+        debug(LOG_ERR, "client, listening on tcp %s:%d", conf.param.localListenIface, conf.param.localListenPort);
+        debug(LOG_ERR, "target udp %s:%d", conf.param.targetIp, conf.param.targetPort);
     }
 
     return reinterpret_cast<uv_handle_t *>(tcp);
@@ -117,9 +117,9 @@ void RClient::svr_conn_cb(uv_stream_t *server, int status) {
 }
 
 void RClient::newConn(uv_stream_t *server, int status) {
-    debug(LOG_INFO, "new connection. status: %d\n", status);
+    debug(LOG_ERR, "new connection. status: %d\n", status);
     if (status) {
-        debug(LOG_INFO, "new connection error. status: %d, err: %s\n", status, uv_strerror(status));
+        debug(LOG_ERR, "new connection error. status: %d, err: %s\n", status, uv_strerror(status));
         return;
     }
 
@@ -135,8 +135,10 @@ void RClient::newConn(uv_stream_t *server, int status) {
 
 void RClient::onNewClient(uv_stream_t *client) {
     mConv++;
-    IPipe *top = new TopStreamPipe(client);
-    IPipe *nmq = new NMQPipe(mConv, top);   // nmq pipe addr
+//    IPipe *top = new TopStreamPipe(client);
+
+    IRdWriter *rdWriter = new TcpRdWriter(client);
+    IPipe *nmq = new NMQPipe(mConv, rdWriter);   // nmq pipe addr
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, &mTargetAddr);
     sess->SetExpireIfNoOps(20); // todo: fill value from conf
 

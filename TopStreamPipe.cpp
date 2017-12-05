@@ -82,11 +82,6 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
     free(rbuf.base);
 }
 
-void TopStreamPipe::close_cb(uv_handle_t *handle) {
-    debug(LOG_ERR, "topstream closed.");
-    free(handle);
-}
-
 void TopStreamPipe::write_cb(uv_write_t *uvreq, int status) {
     rwrite_req_t *req = reinterpret_cast<rwrite_req_t *>(uvreq);
     auto pipe = static_cast<TopStreamPipe *> (req->write.data);

@@ -37,6 +37,9 @@ typedef struct rudp_send_t {
 } rudp_send_t;
 
 void free_rudp_send(rudp_send_t *send);
+
+void close_cb(uv_handle_t *handle);
+
 #ifdef __cplusplus
 }
 #endif

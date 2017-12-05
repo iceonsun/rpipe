@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include "BtmPipe.h"
 #include "debug.h"
+#include "FdUtil.h"
 
 int BtmPipe::Close() {
     if (mFd >= 0) {
@@ -16,9 +17,9 @@ int BtmPipe::Close() {
 }
 
 BtmPipe::BtmPipe(int fd, uv_loop_t *loop) : mFd(fd) {
-    CheckDgramFd(fd);
+    FdUtil::CheckDgramFd(fd);
 
-    SetNonblocking(mFd);    // todo: check if this is necessary or better place
+    FdUtil::SetNonblocking(mFd);    // todo: check if this is necessary or better place
 
     uv_poll_init(loop, &mPoll, mFd);
     mPoll.data = this;
@@ -47,24 +48,3 @@ void BtmPipe::pollcb(uv_poll_t *handle, int status, int events) {
         pipe->onReadable(handle);
     }
 }
-
-void BtmPipe::SetBlocking(int &fd) {
-    int oflag = fcntl(fd, F_GETFL, 0);
-    int newFlag = oflag & (~O_NONBLOCK);
-    fcntl(fd, F_SETFL, newFlag);
-}
-
-void BtmPipe::SetNonblocking(int &fd) {
-    int oflag = fcntl(fd, F_GETFL, 0);
-    int newFlag = oflag | O_NONBLOCK;
-    fcntl(fd, F_SETFL, newFlag);
-}
-
-void BtmPipe::CheckDgramFd(int fd) {
-    assert(fd >= 0);
-    int type;
-    socklen_t len;
-    getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &len);
-    assert(type == SOCK_DGRAM);
-}
-

@@ -10,7 +10,7 @@ RstSessionPipe::RstSessionPipe(IPipe *pipe, uv_loop_t *loop, const SessionPipe::
         : SessionPipe(pipe, loop, key, target) {}
 
 int RstSessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
-    debug(LOG_INFO, "input");
+    debug(LOG_ERR, "input");
     notifyPeerClose(RST);
     return UV_EOF;
 }

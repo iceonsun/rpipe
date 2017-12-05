@@ -2,13 +2,13 @@
 // Created on 11/13/17.
 //
 
-#include <cassert>
+#include "BtmPipe.h"
 #include <syslog.h>
 #include "IPipe.h"
 #include "debug.h"
 
 IPipe::~IPipe() {
-    debug(LOG_INFO, "");
+    debug(LOG_ERR, "");
 }
 
 int IPipe::Output(ssize_t nread, const rbuf_t *buf) {
@@ -50,3 +50,4 @@ void IPipe::OnError(IPipe *pipe, int err) {
 void IPipe::SetOnErrCb(const ErrCb &cb) {
     mErrCb = cb;
 }
+

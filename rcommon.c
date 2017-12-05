@@ -40,3 +40,7 @@ void free_rudp_send(rudp_send_t *send) {
         free(send);
     }
 }
+
+void close_cb(uv_handle_t *handle) {
+    free(handle);
+}

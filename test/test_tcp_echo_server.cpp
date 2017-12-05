@@ -11,10 +11,6 @@ const static char *iface = "127.0.0.1";
 
 uv_tcp_t tcpSvr;
 
-void close_cb(uv_handle_t *handle) {
-    free(handle);
-}
-
 void write_cb(uv_write_t *req, int status) {
     if (status) {
         fprintf(stderr, "failed to write: %s\n", uv_strerror(status));

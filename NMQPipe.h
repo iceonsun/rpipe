@@ -10,16 +10,16 @@
 #include <syslog.h>
 #include "debug.h"
 #include "ITopContainerPipe.h"
+#include "IRdWriter.h"
 
-class NMQPipe : public ITopContainerPipe {
+class NMQPipe : public IPipe {
 public:
-    NMQPipe(IUINT32 conv, IPipe *topPipe);
 
-    virtual ~NMQPipe();
+    NMQPipe(IUINT32 conv, IRdWriter *rdwr);
+
+    ~NMQPipe() override;
 
     int Init() override;
-
-    int Send(ssize_t nread, const rbuf_t *buf) override;
 
     int Input(ssize_t nread, const rbuf_t *buf) override;
 
@@ -29,9 +29,11 @@ public:
 
 protected:
     static IINT32 nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg);
-    static void nmqShutdownCb(NMQ *q);
+    static IINT32 read_cb(NMQ *nmq, char *buf, int len, int *err);
+
+    void nmqRecvDone();
     void nmqSendDone();
-    void nmqRecvPeerDone();
+    int onRecvCb(ssize_t nread, const rbuf_t *buf);
 
 private:
     int nmqRecv(NMQ *nmq);
@@ -41,7 +43,9 @@ private:
     NMQ *mNmq = nullptr;
     int mRcvTot = 0;
     int mSndTot = 0;
-    int mErrState = 0;
+    IUINT32 mOutTot = 0;
+
+    IRdWriter *mRdWriter;
 };
 
 

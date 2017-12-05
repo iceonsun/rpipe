@@ -28,7 +28,6 @@ protected:
     static void send_cb(uv_udp_send_t *req, int status);
     static void recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
                         unsigned flags);
-    static void close_cb(uv_handle_t* handle);
 private:
     uv_udp_t *mDgram = nullptr;
     IUINT32 mCnt = 0;

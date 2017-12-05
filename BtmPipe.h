@@ -18,12 +18,6 @@ public:
 
     int GetFd();
 
-    static inline void SetBlocking(int &fd);
-
-    static inline void SetNonblocking(int &fd);
-
-    static void CheckDgramFd(int fd);
-
 protected:
     virtual int outputCb(ssize_t nread, const rbuf_t *buf) = 0;
     virtual int onReadable(uv_poll_t *handle) = 0;

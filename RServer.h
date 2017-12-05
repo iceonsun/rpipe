@@ -29,7 +29,7 @@ protected:
     virtual uv_udp_t *CreateBtmDgram(const Config &conf);
 
 private:
-    virtual SessionPipe *CreateStreamPipe(uv_stream_t *conn, const SessionPipe::KeyType &key, const void *addr);
+    virtual SessionPipe *CreateStreamPipe(int sock, const SessionPipe::KeyType &key, const void *addr);
 
 private:
     uv_loop_t *mLoop;

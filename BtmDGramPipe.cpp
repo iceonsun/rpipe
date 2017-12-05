@@ -106,7 +106,3 @@ void BtmDGramPipe::SetOutputCb(const PipeCb &cb) {
 int BtmDGramPipe::Input(ssize_t nread, const rbuf_t *buf) {
     fprintf(stderr, "cannot call input on a btm stream pipe\n");
 }
-
-void BtmDGramPipe::close_cb(uv_handle_t *handle) {
-    free(handle);
-}

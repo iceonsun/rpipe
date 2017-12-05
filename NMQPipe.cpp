@@ -5,8 +5,16 @@
 #include <cassert>
 #include "NMQPipe.h"
 
-NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
+NMQPipe::NMQPipe(IUINT32 conv, IRdWriter *rdwr) {
     mConv = conv;
+    mRdWriter = rdwr;
+    IPipe *pipe = this;
+    mRdWriter->SetOnErrCb([pipe](int err) {
+        debug(LOG_ERR, "rdwriter err: %d", err);
+        pipe->OnError(pipe, err);
+    });
+    auto fn = std::bind(&NMQPipe::onRecvCb, this, std::placeholders::_1, std::placeholders::_2);
+    SetOnRecvCb(fn);
 }
 
 NMQPipe::~NMQPipe() {
@@ -14,48 +22,32 @@ NMQPipe::~NMQPipe() {
 }
 
 int NMQPipe::Init() {
-    ITopContainerPipe::Init();
+    IPipe::Init();
 
     mNmq = nmq_new(mConv, this);
+    nmq_set_read_cb(mNmq, read_cb);
     nmq_set_output_cb(mNmq, nmqOutputCb);
     nmq_start(mNmq);
-
-    debug(LOG_INFO, "");
 
     return 0;
 }
 
 int NMQPipe::Close() {
-    ITopContainerPipe::Close();
+    if (mRdWriter) {
+        mRdWriter->Close();
+        delete mRdWriter;
+        mRdWriter = nullptr;
+    }
+
     if (mNmq) {
-        debug(LOG_ERR, "mSndTot: %d, mRcvTot: %d", mSndTot, mRcvTot);
+        debug(LOG_ERR, "mSndTot: %d, mRcvTot: %d, mOutTot: %u, mOutTot/mSndTot: %lf", mSndTot, mRcvTot, mOutTot,
+              (mOutTot * 1.0) / mSndTot);
         nmq_destroy(mNmq);
         mNmq = nullptr;
     }
     return 0;
 }
 
-// > 0 for number of bytes sent
-// = 0 no bytes sent
-// < 0 error occurs.
-int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
-    int nret = nread;
-    if (nread > 0) {
-        nret = nmq_send(mNmq, buf->base, nread);
-        if (nret > 0) {
-            mSndTot += nret;
-        }
-        nmq_flush(mNmq, iclock());  // todo: check if necessary
-        debug(LOG_ERR, "nmq_send %d bytes. ret: %d. curr: %d", nread, nret, iclock() % 10000);
-    } else if (nread < 0) {
-        debug(LOG_ERR, "err state: %d", nread);
-        BlockTop();
-        mErrState = nread;
-        nmq_shutdown_send(mNmq, nmqShutdownCb);
-//        Output(nread, buf); // this means report error: nread
-    }
-    return nret;
-}
 
 int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
     assert(nread > 0);  // it's caller's responsibility to check nread
@@ -69,7 +61,7 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
             return NMQ_ERR_CONV_DIFF;
         }   // other error just ignore it
 //        nmq_flush(mNmq, iclock()); // todo: check if necessary or better place
-        debug(LOG_INFO, "nmq_input %d bytes. ret: %d, current: %d", nread, nret, iclock() % 10000);
+        debug(LOG_ERR, "nmq_input %d bytes. ret: %d, current: %d", nread, nret, iclock() % 10000);
         if (nret >= 0) {
             int n = nmqRecv(mNmq);
             return n;
@@ -85,10 +77,11 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         rbuf_t buf = {0};
         buf.base = const_cast<char *>(data);   // caution!! reuse ptr
         buf.len = len;
-        debug(LOG_INFO, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
+        debug(LOG_ERR, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
         nret = pipe->Output(len, &buf);
-    } else if (len == NMQ_EOF) {
-        pipe->nmqRecvPeerDone();
+        pipe->mOutTot += len;
+    } else if (len == NMQ_SEND_EOF) {
+        pipe->nmqSendDone();
         nret = 0;
     } else {
         debug(LOG_ERR, "unrecognized len: %d", len);
@@ -107,43 +100,50 @@ int NMQPipe::nmqRecv(NMQ *nmq) {
     buf.base = base;
     buf.len = SIZE;
 
-    int n = 0;
     // todo: 是bufsize太小
     while ((nret = nmq_recv(nmq, buf.base, SIZE)) > 0) {
-        debug(LOG_ERR, "nret: %d", nret);
+        debug(LOG_ERR, "nmq_recv: %d", nret);
         mRcvTot += nret;
         tot += nret;
-        n = OnRecv(nret, &buf);
-        if (n < 0) {
-            break;
-        }
+        OnRecv(nret, &buf);
     }
     if (nret < 0) {
         debug(LOG_ERR, "nmq_recv error: %d", nret);
     }
-    return n < 0 ? n : tot;
+    if (nret == NMQ_RECV_EOF) {
+        nmqRecvDone();
+        SetOnRecvCb(nullptr);
+    }
+    return nret < 0 ? nret : tot;
 }
 
 void NMQPipe::Flush(IUINT32 curr) {
-    ITopContainerPipe::Flush(curr);
+    IPipe::Flush(curr);
     nmq_flush(mNmq, curr);
-//    nmq_update(mNmq, curr);
+    nmqRecv(mNmq);
 }
 
-void NMQPipe::nmqShutdownCb(NMQ *q) {
-    NMQPipe *pipe = static_cast<NMQPipe *>(q->arg);
-    pipe->nmqSendDone();
+void NMQPipe::nmqRecvDone() {
+    debug(LOG_ERR, "nmq recv done.");
+//    nmqRecv(mNmq);  // stack overflows
+    rbuf_t rbuf;
+    Output(UV_EOF, &rbuf);
 }
 
 void NMQPipe::nmqSendDone() {
+//    nmqRecv(mNmq);  // no need to recv because self closed
     debug(LOG_ERR, "nmq send done.");
     rbuf_t rbuf;
-    Output(mErrState, &rbuf);
+    Output(UV_EOF, &rbuf);
 }
 
-void NMQPipe::nmqRecvPeerDone() {
-    nmqRecv(mNmq);  // recv them all
-    debug(LOG_ERR, "nmq recv done.");
-    rbuf_t rbuf;
-    Output(UV_EOF, &rbuf);
+IINT32 NMQPipe::read_cb(NMQ *nmq, char *buf, int len, int *err) {
+    auto *pipe = static_cast<NMQPipe *>(nmq->arg);
+    return pipe->mRdWriter->Read(buf, len, err);
+}
+
+int NMQPipe::onRecvCb(ssize_t nread, const rbuf_t *buf) {
+    int err;
+    int n = mRdWriter->Write(buf->base, nread, &err);
+    return n;
 }

@@ -41,8 +41,6 @@ private:
 
     static void svr_conn_cb(uv_stream_t *server, int status);
 
-    static void close_cb(uv_handle_t *handle);
-
     void newConn(uv_stream_t *server, int status);
 
 private:
