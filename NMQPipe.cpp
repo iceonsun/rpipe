@@ -40,8 +40,6 @@ int NMQPipe::Close() {
     }
 
     if (mNmq) {
-        debug(LOG_ERR, "mSndTot: %d, mRcvTot: %d, mOutTot: %u, mOutTot/mSndTot: %lf", mSndTot, mRcvTot, mOutTot,
-              (mOutTot * 1.0) / mSndTot);
         nmq_destroy(mNmq);
         mNmq = nullptr;
     }
@@ -79,7 +77,6 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         buf.len = len;
         debug(LOG_ERR, "nmqOutputCb, %d bytes. curr: %d", len, iclock() % 10000);
         nret = pipe->Output(len, &buf);
-        pipe->mOutTot += len;
     } else if (len == NMQ_SEND_EOF) {
         pipe->nmqSendDone();
         nret = 0;
@@ -103,7 +100,6 @@ int NMQPipe::nmqRecv(NMQ *nmq) {
     // todo: 是bufsize太小
     while ((nret = nmq_recv(nmq, buf.base, SIZE)) > 0) {
         debug(LOG_ERR, "nmq_recv: %d", nret);
-        mRcvTot += nret;
         tot += nret;
         OnRecv(nret, &buf);
     }

@@ -122,7 +122,7 @@ SessionPipe *RServer::OnRawData(const SessionPipe::KeyType &key, const void *add
         if (nret) {
             SessionPipe *sess = new RstSessionPipe(nullptr, nullptr, key, static_cast<const sockaddr_in *>(addr));
             fprintf(stderr, "failed to connect %s: %d: %s\n", inet_ntoa(mTargetAddr.sin_addr),
-                    ntohs(mTargetAddr.sin_port), strerror(nret));
+                    ntohs(mTargetAddr.sin_port), strerror(errno));
             return sess;
         }
         return CreateStreamPipe(sock, key, addr);

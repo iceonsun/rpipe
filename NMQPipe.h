@@ -41,9 +41,6 @@ private:
 private:
     IUINT32 mConv = 0;
     NMQ *mNmq = nullptr;
-    int mRcvTot = 0;
-    int mSndTot = 0;
-    IUINT32 mOutTot = 0;
 
     IRdWriter *mRdWriter;
 };
