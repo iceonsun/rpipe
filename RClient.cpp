@@ -7,6 +7,7 @@
 #include <nmq.h>
 #include <sstream>
 #include <enc.h>
+#include <iostream>
 #include "RClient.h"
 #include "TopStreamPipe.h"
 #include "NMQPipe.h"
@@ -26,8 +27,12 @@ int RClient::Loop(Config &conf) {
 //    conf.param.targetIp = "127.0.0.1";
     conf.param.targetPort = 10011;
     conf.param.targetIp = "47.95.217.247";
+
+    auto jsonStr = conf.to_json().dump();
+    std::cout << "config: \n" << jsonStr << std::endl;
+
     mLoop = uv_default_loop();
-    int nret = uv_ip4_addr(conf.param.targetIp, conf.param.targetPort, &mTargetAddr);
+    int nret = uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
     if (nret != 0) {
         fprintf(stderr, "wrong conf: %s\n", uv_strerror(nret));
         return -1;
@@ -86,16 +91,16 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
     uv_tcp_init(mLoop, tcp);
 
     struct sockaddr_in addr = {0};
-    uv_ip4_addr(conf.param.localListenIface, conf.param.localListenPort, &addr);
+    uv_ip4_addr(conf.param.localListenIface.c_str(), conf.param.localListenPort, &addr);
     int nret = uv_tcp_bind(tcp, reinterpret_cast<const sockaddr *>(&addr), 0);
     if (0 == nret) {
-        nret = uv_listen(reinterpret_cast<uv_stream_t *>(tcp), conf.param.BACKLOG, svr_conn_cb);
+        nret = uv_listen(reinterpret_cast<uv_stream_t *>(tcp), conf.param.backlog, svr_conn_cb);
         if (nret) {
             debug(LOG_ERR, "failed to listen tcp: %s\n", uv_strerror(nret));
             uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
         }
     } else {
-        debug(LOG_ERR, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface, conf.param.localListenPort,
+        debug(LOG_ERR, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface.c_str(), conf.param.localListenPort,
               uv_strerror(nret));
         free(tcp);
     }
@@ -104,8 +109,8 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
         debug(LOG_ERR, "failed to start, err: %s\n", uv_strerror(nret));
         tcp = nullptr;
     } else {
-        debug(LOG_ERR, "client, listening on tcp %s:%d", conf.param.localListenIface, conf.param.localListenPort);
-        debug(LOG_ERR, "target udp %s:%d", conf.param.targetIp, conf.param.targetPort);
+        debug(LOG_ERR, "client, listening on tcp %s:%d", conf.param.localListenIface.c_str(), conf.param.localListenPort);
+        debug(LOG_ERR, "target udp %s:%d", conf.param.targetIp.c_str(), conf.param.targetPort);
     }
 
     return reinterpret_cast<uv_handle_t *>(tcp);

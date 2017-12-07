@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include <unistd.h>
+#include <iostream>
 
 #include "FdUtil.h"
 #include "RServer.h"
@@ -25,10 +26,13 @@ int RServer::Loop(Config &conf) {
     conf.param.targetIp = "127.0.0.1";
     conf.param.targetPort = 10022;
 
+    auto jsonStr = conf.to_json().dump();
+    std::cout << "config: \n" << jsonStr << std::endl;
+
     mLoop = uv_default_loop();
     mConf = conf;
 
-    uv_ip4_addr(conf.param.targetIp, conf.param.targetPort, &mTargetAddr);
+    uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
 
     mBrigde = CreateBridgePipe(conf);
 
@@ -100,8 +104,8 @@ uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     uv_udp_t *udp = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
     uv_udp_init(mLoop, udp);
     struct sockaddr_in addr = {0};
-    uv_ip4_addr(conf.param.localListenIface, conf.param.localListenPort, &addr);
-    debug(LOG_ERR, "server, listening on udp: %s:%d", conf.param.localListenIface, conf.param.localListenPort);
+    uv_ip4_addr(conf.param.localListenIface.c_str(), conf.param.localListenPort, &addr);
+    debug(LOG_ERR, "server, listening on udp: %s:%d", conf.param.localListenIface.c_str(), conf.param.localListenPort);
     debug(LOG_ERR, "target tcp, %s:%d", conf.param.targetIp, conf.param.targetPort);
 
     int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, UV_UDP_REUSEADDR);

@@ -2,10 +2,12 @@
 // Created on 12/4/17.
 //
 
-#include "BtmPipe.h"
-#include <sys/socket.h>
 #include <cassert>
+
+#include <unistd.h>
+#include <sys/socket.h>
 #include "FdUtil.h"
+#include "BtmPipe.h"
 
 void FdUtil::CheckDgramFd(int fd) {
     checkFdType(fd, SOCK_DGRAM);
@@ -33,4 +35,8 @@ void FdUtil::SetBlocking(int &fd) {
     int oflag = fcntl(fd, F_GETFL, 0);
     int newFlag = oflag & (~O_NONBLOCK);
     fcntl(fd, F_SETFL, newFlag);
+}
+
+bool FdUtil::FileExists(const char *fName) {
+    return access(fName, F_OK) == 0;
 }

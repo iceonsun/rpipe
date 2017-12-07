@@ -112,7 +112,7 @@ int main() {
         return size;
     });
 
-    NMQPipe *nmqPipe = new NMQPipe(1, raw);
+    NMQPipe *nmqPipe = new NMQPipe(1, nullptr);
     SessionPipe *sess = new SessionPipe(nmqPipe, uv_default_loop(), 1, nullptr);
 
 //    nmqPipe->SetTargetAddr()

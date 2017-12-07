@@ -6,7 +6,6 @@
 #define RPIPE_UTIL_H
 
 class FdUtil {
-
 public:
     static void CheckDgramFd(int fd);
 
@@ -15,6 +14,8 @@ public:
     static int SetNonblocking(int &fd);
 
     static void SetBlocking(int &fd);
+
+    static bool FileExists(const char *fName);
 
 private:
     static void checkFdType(int fd, int type);
