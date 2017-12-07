@@ -16,8 +16,13 @@ int UdpBtmPipe::outputCb(ssize_t nread, const rbuf_t *buf) {
         auto *addr = static_cast<sockaddr_in *>(buf->data);
         socklen_t sockLen = sizeof(struct sockaddr_in);
         ssize_t nLeft = nread;
+//        while (nLeft > 0) {
+//            ssize_t n = sendto(udp, buf->base, nread, 0, reinterpret_cast<const sockaddr *>(addr), sockLen);
+//            debug(LOG_ERR, "send %d bytes to %s:%d", n, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
+//            nLeft -= n;
+//        }
         while (nLeft > 0) {
-            ssize_t n = sendto(udp, buf->base, nread, 0, reinterpret_cast<const sockaddr *>(addr), sockLen);
+            ssize_t n = sendto(udp, buf->base + (nread - nLeft), nLeft, 0, reinterpret_cast<const sockaddr *>(addr), sockLen);
             debug(LOG_ERR, "send %d bytes to %s:%d", n, inet_ntoa(addr->sin_addr), ntohs(addr->sin_port));
             nLeft -= n;
         }
