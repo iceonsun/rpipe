@@ -8,6 +8,7 @@
 #include "../../debug.h"
 #include "../../NMQPipe.h"
 #include "RawPipe.h"
+#include "../../SessionPipe.h"
 
 #define IFACE "127.0.0.1"
 #define LOCAL_TCP_PORT 10008
@@ -113,7 +114,7 @@ int main() {
     });
 
     NMQPipe *nmqPipe = new NMQPipe(1, nullptr);
-    SessionPipe *sess = new SessionPipe(nmqPipe, uv_default_loop(), 1, nullptr);
+    ISessionPipe *sess = new SessionPipe(nmqPipe, uv_default_loop(), 1, nullptr);
 
 //    nmqPipe->SetTargetAddr()
     bridge->AddPipe(sess);

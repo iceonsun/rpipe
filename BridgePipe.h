@@ -8,11 +8,11 @@
 #include <list>
 #include <map>
 #include "IPipe.h"
-#include "SessionPipe.h"
+#include "ISessionPipe.h"
 
 class BridgePipe : public IPipe {
 public:
-    typedef std::function<SessionPipe *(const SessionPipe::KeyType &, const void *addr)> OnCreatePipeCb;
+    typedef std::function<ISessionPipe *(const ISessionPipe::KeyType &, const void *addr)> OnCreatePipeCb;
 
     explicit BridgePipe(IPipe *btmPipe);
 
@@ -26,18 +26,18 @@ public:
     void Flush(IUINT32 curr) override;
 
     // top pipes should call this function to send data
-    virtual int PSend(SessionPipe *pipe, ssize_t nread, const rbuf_t *buf);
+    virtual int PSend(ISessionPipe *pipe, ssize_t nread, const rbuf_t *buf);
 
     /* new methods */
     // if (key) must be true
 
-    virtual int AddPipe(SessionPipe *pipe);
+    virtual int AddPipe(ISessionPipe *pipe);
 
-    virtual int RemovePipe(SessionPipe *pipe);
+    virtual int RemovePipe(ISessionPipe *pipe);
 
-    virtual SessionPipe *FindPipe(const SessionPipe::KeyType &key) const;
+    virtual ISessionPipe *FindPipe(const ISessionPipe::KeyType &key) const;
 
-    virtual void OnTopPipeError(SessionPipe *pipe, int err);
+    virtual void OnTopPipeError(ISessionPipe *pipe, int err);
 
     virtual void OnBtmPipeError(IPipe *pipe, int err);
 
@@ -46,18 +46,18 @@ public:
     void Start() override;
 
 protected:
-    virtual SessionPipe *onCreateNewPipe(const SessionPipe::KeyType &key, void *addr);
+    virtual ISessionPipe *onCreateNewPipe(const ISessionPipe::KeyType &key, void *addr);
 
 private:
 
-    int doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator it);
+    int doRemove(std::map<ISessionPipe::KeyType, ISessionPipe *>::iterator it);
 
     int removeAll();
 
     inline void cleanErrPipes();
 
-    std::map<SessionPipe::KeyType, SessionPipe *> mTopPipes;
-    std::map<SessionPipe::KeyType, SessionPipe *> mErrPipes;
+    std::map<ISessionPipe::KeyType, ISessionPipe *> mTopPipes;
+    std::map<ISessionPipe::KeyType, ISessionPipe *> mErrPipes;
     IPipe *mBtmPipe;
     OnCreatePipeCb mCreateNewPipeCb;
 };

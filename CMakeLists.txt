@@ -8,7 +8,7 @@ link_directories(../sockNM/cmake-build-debug/)
 
 set(SOURCE_FILES IPipe.cpp IPipe.h rcommon.h rcommon.c TopStreamPipe.cpp TopStreamPipe.h NMQPipe.cpp NMQPipe.h BtmDGramPipe.cpp BtmDGramPipe.h RApp.cpp RApp.h RClient.cpp RClient.h Config.h Config.cpp RServer.cpp RServer.h BridgePipe.cpp BridgePipe.h debug.h debug.c SessionPipe.cpp SessionPipe.h RTimer.cpp RTimer.h ITopContainerPipe.cpp ITopContainerPipe.h BtmPipe.h BtmPipe.cpp  UdpBtmPipe.h UdpBtmPipe.cpp
     RstSessionPipe.h RstSessionPipe.cpp IRdWriter.h IRdWriter.cpp TcpRdWriter.h TcpRdWriter.cpp FdUtil.h FdUtil.cpp
-    args.hxx json/json11.hpp json/json11.cpp)
+    args.hxx json/json11.hpp json/json11.cpp ISessionPipe.h ISessionPipe.cpp)
 add_executable(RPipe ${SOURCE_FILES} main.cpp )
 
 add_executable(rclient ${SOURCE_FILES} client_main.cpp)

@@ -9,22 +9,19 @@
 #include "IPipe.h"
 #include "RTimer.h"
 #include "ITopContainerPipe.h"
+#include "ISessionPipe.h"
 
-class SessionPipe : public ITopContainerPipe {
+class SessionPipe : public ISessionPipe {
 public:
     static const IUINT32 MIN_EXPIRE_SEC = 10;
     static const IUINT32 MAX_EXPIRE_SEC = 120;
-    static const int HEAD_LEN = sizeof(IUINT32) + 1;
-
-    typedef std::string KeyType;
 
     // this two methods should be declared here. remove them from ipipe
     SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target);
+
     SessionPipe(IPipe *pipe, uv_loop_t *loop, int conv, const sockaddr_in *target);
 
-    virtual ~SessionPipe();
-
-    KeyType GetKey();
+    ~SessionPipe() override;
 
     virtual void SetExpireIfNoOps(IUINT32 sec);
 
@@ -36,27 +33,15 @@ public:
 
     int Close() override;
 
-    static int IsCloseSignal(ssize_t nread, const rbuf_t *buf);
-
-    // if declared static inline, cannot compile
-    static KeyType BuildKey(ssize_t nread, const rbuf_t *rbuf);
-    static KeyType BuildKey(int conv, const struct sockaddr_in *addr);
-    static IUINT32 ConvFromKey(const KeyType& key);
-
 protected:
-    static inline ssize_t insertHead(char *base, int len, char cmd, IUINT32 conv);
-
-    static inline const char *decodeHead(const char *base, int len, char *cmd, IUINT32 *conv);
 
     void onPeerEof();
+
     void onSelfEof();
+
     void onPeerRst();
 
-    void notifyPeerClose(char cmd = FIN);
     void timeoutToClose();
-
-    static int decodeConv(const KeyType &key);
-
 
 private:
     void timer_cb(void *arg);
@@ -64,14 +49,10 @@ private:
     int doSend(ssize_t nread, const rbuf_t *buf);
 
 private:
-    struct sockaddr_in *mAddr = nullptr;
     IUINT32 mCnt = 0;
     IUINT32 mLastCnt = 0;
     RTimer *mRepeatTimer = nullptr;
-    KeyType mKey;
-    int mConv;
     uv_loop_t *mLoop;
-
 };
 
 

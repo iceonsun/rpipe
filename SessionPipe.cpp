@@ -5,29 +5,18 @@
 #include <cassert>
 #include <syslog.h>
 #include <sstream>
-#include <string>
 #include <nmq.h>
-#include <enc.h>
 #include "SessionPipe.h"
 #include "debug.h"
 
 SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target)
-        : ITopContainerPipe(pipe) {
+        : ISessionPipe(pipe, key, target) {
     mLoop = loop;
-    if (target) {
-        mAddr = static_cast<sockaddr_in *>(malloc(sizeof(struct sockaddr_in)));
-        memcpy(mAddr, target, sizeof(struct sockaddr_in));
-    }
-    mKey = key;
-    mConv = decodeConv(key);
-    assert(mConv > 0);
-    assert(mKey == BuildKey(mConv, target));    // ensure consistency
 }
 
 SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, int conv, const sockaddr_in *target)
         : SessionPipe(pipe, loop, BuildKey(conv, target), target) {
 }
-
 
 SessionPipe::~SessionPipe() {
     debug(LOG_ERR, "");
@@ -84,7 +73,7 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
             if (nread == headLen) {
                 return 0;   // 0 bytes. do nothing.
             }
-            return ITopContainerPipe::Input(nread - headLen, &rbuf);
+            return ISessionPipe::Input(nread - headLen, &rbuf);
         }
     } else if (nread > 0) {
         debug(LOG_ERR, "broken msg: key: %s, nread: %d", mKey.c_str(), nread);
@@ -117,17 +106,12 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
 }
 
 int SessionPipe::Close() {
-    ITopContainerPipe::Close();
+    ISessionPipe::Close();
 
     if (mRepeatTimer) {
         mRepeatTimer->Stop();
         delete mRepeatTimer;
         mRepeatTimer = nullptr;
-    }
-
-    if (mAddr) {
-        free(mAddr);
-        mAddr = nullptr;
     }
 
     return 0;
@@ -138,26 +122,6 @@ void SessionPipe::timeoutToClose() {
     OnError(this, UV_EOF);  // timeout error
 }
 
-int SessionPipe::IsCloseSignal(ssize_t nread, const rbuf_t *buf) {
-    if (nread >= HEAD_LEN && buf && buf->base) {
-        char cmd;
-        IUINT32 conv;
-        decodeHead(buf->base, nread, &cmd, &conv);
-        return cmd == RST || cmd == FIN;
-    }
-    return 0;
-}
-
-void SessionPipe::notifyPeerClose(char cmd) {
-    rbuf_t rbuf = {0};
-    char base[HEAD_LEN] = {0};
-    ssize_t n = insertHead(base, HEAD_LEN, cmd, mConv);
-    rbuf.base = base;
-    rbuf.data = mAddr;
-    ITopContainerPipe::Send(n, &rbuf);
-}
-
-
 int SessionPipe::doSend(ssize_t nread, const rbuf_t *buf) {
     assert(nread > 0 && buf->base);
 
@@ -167,78 +131,9 @@ int SessionPipe::doSend(ssize_t nread, const rbuf_t *buf) {
     memcpy(base + headLen, buf->base, nread);
     rbuf.base = base;
     rbuf.data = mAddr;
-    return ITopContainerPipe::Send(nread + headLen, &rbuf);
+    return ISessionPipe::Send(nread + headLen, &rbuf);
 }
 
-ssize_t SessionPipe::insertHead(char *base, int len, char cmd, IUINT32 conv) {
-    assert(base != nullptr);
-    assert(len >= HEAD_LEN);
-
-    base[0] = cmd;
-    encode_uint32(conv, base + 1);
-    return sizeof(conv) + 1;
-}
-
-const char *SessionPipe::decodeHead(const char *base, int len, char *cmd, IUINT32 *conv) {
-    assert(base != nullptr);
-    assert(len >= HEAD_LEN);
-    *cmd = base[0];
-    return decode_uint32(conv, base + 1);
-}
-
-SessionPipe::KeyType SessionPipe::BuildKey(int conv, const struct sockaddr_in *addr) {
-    std::ostringstream out;
-    if (addr == nullptr) {
-        out << ":" << std::to_string(conv);
-    } else {
-        out << inet_ntoa(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ":" << std::to_string(conv);
-    }
-    return out.str();
-}
-
-SessionPipe::KeyType SessionPipe::BuildKey(ssize_t nread, const rbuf_t *rbuf) {
-    if (nread >= HEAD_LEN && rbuf && rbuf->base) {
-        char cmd;
-        IUINT32 conv;
-        decodeHead(rbuf->base, nread, &cmd, &conv);
-
-        struct sockaddr_in *addr = static_cast<sockaddr_in *>(rbuf->data);
-        return BuildKey(conv, addr);
-    }
-    return nullptr;
-//#ifndef NNDEBUG
-//    return nullptr;
-//#else
-//    return "";
-//#endif
-}
-
-
-IUINT32 SessionPipe::ConvFromKey(const SessionPipe::KeyType &key) {
-    if (!key.empty()) {
-        ssize_t pos = key.rfind(':');
-        if (pos != std::string::npos) {
-            return std::stoul(key.substr(pos+1));
-        }
-    }
-    return 0;
-}
-
-SessionPipe::KeyType SessionPipe::GetKey() {
-    return mKey;
-}
-
-int SessionPipe::decodeConv(const SessionPipe::KeyType &key) {
-    auto pos = key.rfind(':');
-    if (pos == std::string::npos || pos == key.length() - 1) {
-        return -1;
-    }
-    long conv = std::stol(key.substr(pos + 1));
-    if (conv < 0) {
-        return -1;
-    }
-    return static_cast<int>(conv);
-}
 // flush is forbidden here. it may cause recursion and stackoverflow
 void SessionPipe::onPeerEof() {
     debug(LOG_ERR, "onPeerEof.");

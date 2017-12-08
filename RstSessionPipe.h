@@ -5,12 +5,11 @@
 #ifndef RPIPE_RSTSESSIONPIPE_H
 #define RPIPE_RSTSESSIONPIPE_H
 
+#include "ISessionPipe.h"
 
-#include "SessionPipe.h"
-
-class RstSessionPipe : public SessionPipe {
+class RstSessionPipe : public ISessionPipe {
 public:
-    RstSessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target);
+    RstSessionPipe(IPipe *pipe, const KeyType &key, const sockaddr_in *target);
 
     int Input(ssize_t nread, const rbuf_t *buf) override;
 

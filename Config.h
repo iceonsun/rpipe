@@ -22,6 +22,7 @@ struct Config {
         std::string crypt = "none";    // not used right now
         std::string key = "rpipe123";   // not used right now
 //        PIPE_TYPE type;
+//        int disconnect_sec = 20;    // automatic disconnect if no operations during last period
         int mtu = 1400;             // mtu for nmq
         int sndwnd = 150;         // 1400B * 150
         int rcvwnd = 500;         // 1400B * 2000

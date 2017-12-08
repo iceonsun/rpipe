@@ -6,8 +6,8 @@
 #include "RstSessionPipe.h"
 #include "debug.h"
 
-RstSessionPipe::RstSessionPipe(IPipe *pipe, uv_loop_t *loop, const SessionPipe::KeyType &key, const sockaddr_in *target)
-        : SessionPipe(pipe, loop, key, target) {}
+RstSessionPipe::RstSessionPipe(IPipe *pipe, const KeyType &key, const sockaddr_in *target)
+        : ISessionPipe(pipe, key, target) {}
 
 int RstSessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
     debug(LOG_ERR, "input");

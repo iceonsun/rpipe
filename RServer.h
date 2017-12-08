@@ -23,13 +23,13 @@ public:
 
     IPipe *CreateBtmPipe(const Config &conf) override;
 
-    virtual SessionPipe * OnRawData(const SessionPipe::KeyType &key, const void *addr);
+    virtual ISessionPipe * OnRawData(const ISessionPipe::KeyType &key, const void *addr);
 
 protected:
     virtual uv_udp_t *CreateBtmDgram(const Config &conf);
 
 private:
-    virtual SessionPipe *CreateStreamPipe(int sock, const SessionPipe::KeyType &key, const void *addr);
+    virtual ISessionPipe *CreateStreamPipe(int sock, const ISessionPipe::KeyType &key, const void *addr);
 
 private:
     uv_loop_t *mLoop;

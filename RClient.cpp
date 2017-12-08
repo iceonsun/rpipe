@@ -12,8 +12,9 @@
 #include "TopStreamPipe.h"
 #include "NMQPipe.h"
 #include "UdpBtmPipe.h"
-#include "RstSessionPipe.h"
 #include "TcpRdWriter.h"
+#include "SessionPipe.h"
+#include "RstSessionPipe.h"
 
 
 RClient::~RClient() {
@@ -24,9 +25,9 @@ int RClient::Loop(Config &conf) {
     conf.param.localListenPort = 10010;
     conf.param.localListenIface = "127.0.0.1";
 
-//    conf.param.targetIp = "127.0.0.1";
+    conf.param.targetIp = "127.0.0.1";
     conf.param.targetPort = 10011;
-    conf.param.targetIp = "47.95.217.247";
+//    conf.param.targetIp = "47.95.217.247";
 
     auto jsonStr = conf.to_json().dump();
     std::cout << "config: \n" << jsonStr << std::endl;
@@ -173,8 +174,8 @@ void RClient::Flush() {
     mBridge->Flush(iclock());
 }
 
-SessionPipe *RClient::OnRawData(const SessionPipe::KeyType &key, const void *addr) {
-    SessionPipe *sess = new RstSessionPipe(nullptr, nullptr, key, static_cast<const sockaddr_in *>(addr));
+ISessionPipe *RClient::OnRawData(const ISessionPipe::KeyType &key, const void *addr) {
+    ISessionPipe *sess = new RstSessionPipe(nullptr, key, static_cast<const sockaddr_in *>(addr));
     return sess;
 }
 

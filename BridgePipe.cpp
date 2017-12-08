@@ -50,11 +50,11 @@ int BridgePipe::Close() {
 
 int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
     int nret = nread;
-    if (nread >= SessionPipe::HEAD_LEN) {
-        SessionPipe::KeyType key = SessionPipe::BuildKey(nread, buf);
-        SessionPipe *sess = FindPipe(key);
+    if (nread >= ISessionPipe::HEAD_LEN) {
+        ISessionPipe::KeyType key = ISessionPipe::BuildKey(nread, buf);
+        ISessionPipe *sess = FindPipe(key);
         debug(LOG_ERR, "key: %s, sess: %p", key.c_str(), sess);
-        if (SessionPipe::IsCloseSignal(nread, buf)) {
+        if (ISessionPipe::IsCloseSignal(nread, buf)) {
             if (!sess) {    // if doesn't exist. we do nothing. otherwise we pass it to sessppe.
                 return 0;
             }
@@ -82,7 +82,7 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
     return nret;
 }
 
-int BridgePipe::RemovePipe(SessionPipe *pipe) {
+int BridgePipe::RemovePipe(ISessionPipe *pipe) {
     auto it = mTopPipes.find(pipe->GetKey());
     if (it == mTopPipes.end()) {
         debug(LOG_ERR, "pipe %p don't belong to bridge pipe.", pipe);
@@ -99,7 +99,7 @@ int BridgePipe::removeAll() {
     return 0;
 }
 
-int BridgePipe::doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator it) {
+int BridgePipe::doRemove(std::map<ISessionPipe::KeyType, ISessionPipe *>::iterator it) {
     if (it != mTopPipes.end()) {
 //        mTopPipes.erase(it);
         debug(LOG_ERR, "remove pipe: %p\n", it->second);
@@ -119,7 +119,7 @@ int BridgePipe::doRemove(std::map<SessionPipe::KeyType, SessionPipe *>::iterator
     return 0;
 }
 
-SessionPipe *BridgePipe::FindPipe(const SessionPipe::KeyType &key) const {
+ISessionPipe *BridgePipe::FindPipe(const ISessionPipe::KeyType &key) const {
     auto it = mTopPipes.find(key);
     return it != mTopPipes.end() ? it->second : nullptr;
 }
@@ -130,9 +130,9 @@ void BridgePipe::Start() {
 }
 
 // if (key) must be true
-int BridgePipe::AddPipe(SessionPipe *pipe) {
+int BridgePipe::AddPipe(ISessionPipe *pipe) {
     if (pipe && !pipe->GetKey().empty()) {
-        const SessionPipe::KeyType &key = pipe->GetKey();
+        const ISessionPipe::KeyType &key = pipe->GetKey();
 
         auto ret = mTopPipes.insert(std::make_pair(key, pipe));
         debug(LOG_ERR, "key: %s, pipe1: %p, pipe2: %p, ok:%d", key.c_str(), pipe, mTopPipes[key], ret.second);
@@ -148,7 +148,7 @@ int BridgePipe::AddPipe(SessionPipe *pipe) {
 
         // no need cast. caputure parameter pipe
         pipe->SetOnErrCb([this](IPipe *p, int err) {
-            SessionPipe *sess = dynamic_cast<SessionPipe *>(p);
+            ISessionPipe *sess = dynamic_cast<ISessionPipe *>(p);
 
 #ifndef NNDEBUG
             this->OnTopPipeError(sess, err);
@@ -186,7 +186,7 @@ void BridgePipe::cleanErrPipes() {
 }
 
 
-void BridgePipe::OnTopPipeError(SessionPipe *pipe, int err) {
+void BridgePipe::OnTopPipeError(ISessionPipe *pipe, int err) {
     debug(LOG_ERR, "pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
     RemovePipe(pipe);
 }
@@ -197,7 +197,7 @@ void BridgePipe::OnBtmPipeError(IPipe *pipe, int err) {
     OnError(this, err);
 }
 
-int BridgePipe::PSend(SessionPipe *pipe, ssize_t nread, const rbuf_t *buf) {
+int BridgePipe::PSend(ISessionPipe *pipe, ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {
         return Send(nread, buf);
     } else if (nread < 0) {    // error occurs. eof or other
@@ -208,7 +208,7 @@ int BridgePipe::PSend(SessionPipe *pipe, ssize_t nread, const rbuf_t *buf) {
     return 0;
 }
 
-SessionPipe *BridgePipe::onCreateNewPipe(const SessionPipe::KeyType &key, void *addr) {
+ISessionPipe *BridgePipe::onCreateNewPipe(const ISessionPipe::KeyType &key, void *addr) {
     if (mCreateNewPipeCb) {
         return mCreateNewPipeCb(key, addr);
     }

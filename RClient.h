@@ -27,7 +27,7 @@ public:
     BridgePipe *CreateBridgePipe(const Config &conf) override;
 
     IPipe *CreateBtmPipe(const Config &conf) override;
-    virtual SessionPipe * OnRawData(const SessionPipe::KeyType &key, const void *addr);
+    virtual ISessionPipe * OnRawData(const ISessionPipe::KeyType &key, const void *addr);
 protected:
 
     virtual uv_handle_t *InitTcpListen(const Config &conf);
