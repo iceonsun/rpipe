@@ -265,11 +265,25 @@ void Config::checkAddr(Config::Param &param, bool is_server) {
         }
     }
 
+    if (param.localListenPort == 0) {
+        if (is_server) {
+            param.localListenPort = SERVER_DEFAULT_LISTEN_PORT;
+        } else {
+            param.localListenPort = CLIENT_DEFAULT_LISTEN_PORT;
+        }
+    }
+
     if (param.targetIp.empty()) {
         if (is_server) {
             param.targetIp = "127.0.0.1";
         } else {
             throw args::Error("No target ip provided for client!");
+        }
+    }
+
+    if (param.targetPort == 0) {
+        if (is_server == false) {
+            param.targetPort = SERVER_DEFAULT_LISTEN_PORT;
         }
     }
 

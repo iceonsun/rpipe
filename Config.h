@@ -14,9 +14,9 @@ struct Config {
         Param(const Param &param) = default;
         Param &operator=(const Param &param) = default;
 
-        int localListenPort = 10010;
+        int localListenPort = 0;
         std::string localListenIface;
-        int targetPort = 10011;
+        int targetPort = 0;
         std::string targetIp;
         bool fc = false;
         std::string crypt = "none";    // not used right now
@@ -47,6 +47,8 @@ struct Config {
     bool isDaemon = true;
     Param param;
 
+    static const int SERVER_DEFAULT_LISTEN_PORT = 10011;
+    static const int CLIENT_DEFAULT_LISTEN_PORT = 10010;
     static const std::string AES;
     static const int MAX_DUP_ACK_LIMIT = 10;
 
