@@ -59,95 +59,100 @@ int Config::parse(bool is_server, int argc, char **argv) {
     try {
         parser.ParseCLI(argc, reinterpret_cast<const char *const *>(argv));
 
-        // parse json if passed json file
-        if (fjson) {
-            debug(LOG_ERR, "json");
-            std::string err;
-            ParseJsonFile(*this, fjson.Get(), err);
-            if (!err.empty()) {
-                throw args::Error(err);
+        do {
+            // parse json if passed json file
+            if (fjson) {
+                debug(LOG_ERR, "json");
+                std::string err;
+                ParseJsonFile(*this, fjson.Get(), err);
+                if (!err.empty()) {
+                    throw args::Error(err);
+                }
+                break;
             }
-            return 0;
-        }
 
-        const auto parseAddr = [](const std::string &addr, std::string &ip, int &port) -> bool {
-            auto pos = addr.find(':');
-            if (pos != std::string::npos && pos < addr.size() - 1) {
-                ip = addr.substr(0, pos);
-                port = std::stoi(addr.substr(pos + 1));
-                if (port > 0) {
-                    return true;
+            const auto parseAddr = [](const std::string &addr, std::string &ip, int &port) -> bool {
+                auto pos = addr.find(':');
+                if (pos != std::string::npos && pos < addr.size() - 1) {
+                    ip = addr.substr(0, pos);
+                    port = std::stoi(addr.substr(pos + 1));
+                    if (port > 0) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // local ip and port
+            if (localAddr) {
+                if (!parseAddr(localAddr.Get(), param.localListenIface, param.localListenPort)) {
+                    throw args::Error("failed to parse local address. e.g. :10010");
                 }
             }
-            return false;
-        };
 
-        // local ip and port
-        if (localAddr) {
-            if (!parseAddr(localAddr.Get(), param.localListenIface, param.localListenPort)) {
-                throw args::Error("failed to parse local address. e.g. :10010");
+            // target ip and port
+            if (targetAddr) {
+                if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort)) {
+                    throw args::Error("failed to parse target addrres. e.g. :10011");
+                }
             }
-        }
 
-        // target ip and port
-        if (targetAddr) {
-            if (!parseAddr(targetAddr.Get(), param.targetIp, param.targetPort)) {
-                throw args::Error("failed to parse target addrres. e.g. :10011");
+            if (fcOn) {
+                param.fc = (fcOn.Get() != 0);
             }
-        }
 
-        if (fcOn) {
-            param.fc = (fcOn.Get() != 0);
-        }
-
-        if (crypt) {
-            if (std::string(AES) != crypt.Get()) {
-                throw args::Error("No encryption works now.");
+            if (crypt) {
+                if (std::string(AES) != crypt.Get()) {
+                    throw args::Error("No encryption works now.");
+                }
+                param.crypt = crypt.Get();
             }
-            param.crypt = crypt.Get();
-        }
 
-        if (key) {
-            param.key = key.Get();
-        }
-
-        const auto parseInt = [](const int parsewnd, int &wnd, const std::string &err) {
-            if (parsewnd <= 0) {
-                throw args::Error(err);
+            if (key) {
+                param.key = key.Get();
             }
-            wnd = parsewnd;
-        };
 
-        if (mtu) {
-            parseInt(mtu.Get(), param.mtu, "mtu must be greater than 0");
-        }
+            const auto parseInt = [](const int parsewnd, int &wnd, const std::string &err) {
+                if (parsewnd <= 0) {
+                    throw args::Error(err);
+                }
+                wnd = parsewnd;
+            };
 
-        if (sndwnd) {
-            parseInt(sndwnd.Get(), param.sndwnd, "wnd must be greater than 0");
-        }
-
-        if (rcvwnd) {
-            parseInt(rcvwnd.Get(), param.rcvwnd, "wnd must be greater than 0");
-        }
-
-        if (tolerance) {
-            parseInt(tolerance.Get(), param.tolerance, "tolerance must be greater than 0");
-        }
-
-        if (ackLim) {
-            parseInt(ackLim.Get(), param.dupAckLim, "duplicate ack limit must be greater than 0");
-            if (param.dupAckLim > MAX_DUP_ACK_LIMIT) {
-                throw args::Error("duplicate ack limit must be less than " + std::to_string(MAX_DUP_ACK_LIMIT));
+            if (mtu) {
+                parseInt(mtu.Get(), param.mtu, "mtu must be greater than 0");
             }
-        }
 
-        if (backlog) {
-            parseInt(backlog.Get(), param.backlog, "backlog must be greater than 0");
-        }
+            if (sndwnd) {
+                parseInt(sndwnd.Get(), param.sndwnd, "wnd must be greater than 0");
+            }
 
-        if (daemon) {
-            this->isDaemon = (daemon.Get() != 0);
-        }
+            if (rcvwnd) {
+                parseInt(rcvwnd.Get(), param.rcvwnd, "wnd must be greater than 0");
+            }
+
+            if (tolerance) {
+                parseInt(tolerance.Get(), param.tolerance, "tolerance must be greater than 0");
+            }
+
+            if (ackLim) {
+                parseInt(ackLim.Get(), param.dupAckLim, "duplicate ack limit must be greater than 0");
+                if (param.dupAckLim > MAX_DUP_ACK_LIMIT) {
+                    throw args::Error("duplicate ack limit must be less than " + std::to_string(MAX_DUP_ACK_LIMIT));
+                }
+            }
+
+            if (backlog) {
+                parseInt(backlog.Get(), param.backlog, "backlog must be greater than 0");
+            }
+
+            if (daemon) {
+                this->isDaemon = (daemon.Get() != 0);
+            }
+            break;
+        } while (true);
+
+        checkAddr(param, is_server);
         return 0;
     } catch (args::Help &e) {
         std::cout << parser;

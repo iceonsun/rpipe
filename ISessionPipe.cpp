@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <cassert>
+#include <cstring>
 
 #include <enc.h>
 #include "ISessionPipe.h"

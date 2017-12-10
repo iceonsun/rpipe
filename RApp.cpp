@@ -8,12 +8,12 @@
 
 int RApp::Main(int argc, char **argv) {
     Config conf;
-//    int ret = conf.parse(isServer(), argc, argv);
-//
-//    if (ret) {
-//        debug(LOG_ERR, "failed to parse command line.");
-//        return ret;
-//    }
+    int ret = conf.parse(isServer(), argc, argv);
+
+    if (ret) {
+        debug(LOG_ERR, "failed to parse command line.");
+        return ret;
+    }
 
     return Loop(conf);
 }

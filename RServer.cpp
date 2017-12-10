@@ -20,11 +20,11 @@
 #include "SessionPipe.h"
 
 int RServer::Loop(Config &conf) {
-    conf.param.localListenIface = "0.0.0.0";
-    conf.param.localListenPort = 10011;
+//    conf.param.localListenIface = "0.0.0.0";
+//    conf.param.localListenPort = 10011;
 
-    conf.param.targetIp = "127.0.0.1";
-    conf.param.targetPort = 10022;
+//    conf.param.targetIp = "127.0.0.1";
+//    conf.param.targetPort = 10022;
 
     auto jsonStr = conf.to_json().dump();
     std::cout << "config: \n" << jsonStr << std::endl;
