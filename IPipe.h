@@ -19,13 +19,6 @@ public:
     typedef std::function<int(ssize_t nread, const rbuf_t *buf)> PipeCb;
     typedef std::function<void(IPipe *pipe, int err)> ErrCb;
 
-    enum CMD {
-        NOP = 0,    // normal data flow
-        SYN = 1,
-        FIN = 2,    // close normally
-        RST = 3,    // peer conn donsn't exist
-    };
-
     virtual ~IPipe();
 
     // todo: init & start

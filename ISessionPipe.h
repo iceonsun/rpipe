@@ -14,11 +14,20 @@ public:
     typedef std::string KeyType;
     static const int HEAD_LEN = sizeof(IUINT32) + 1;
 
-    explicit ISessionPipe(IPipe *topPipe, const KeyType& key, const sockaddr_in *target);
+    explicit ISessionPipe(IPipe *topPipe, const KeyType &key, const sockaddr_in *target);
+
+    ~ISessionPipe() override;
 
     int Close() override;
 
     KeyType GetKey();
+
+    enum CMD {
+        NOP = 0,    // normal data flow
+        SYN = 1,
+        FIN = 2,    // close normally
+        RST = 3,    // peer conn donsn't exist
+    };
 
 public:
     static int IsCloseSignal(ssize_t nread, const rbuf_t *buf);
@@ -30,7 +39,6 @@ public:
 
     static IUINT32 ConvFromKey(const KeyType &key);
 
-    ~ISessionPipe() override;
 
 protected:
     static ssize_t insertHead(char *base, int len, char cmd, IUINT32 conv);
