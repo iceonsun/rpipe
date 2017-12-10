@@ -15,9 +15,9 @@ struct Config {
         Param &operator=(const Param &param) = default;
 
         int localListenPort = 10010;
-        std::string localListenIface = "127.0.0.1";
+        std::string localListenIface;
         int targetPort = 10011;
-        std::string targetIp = "127.0.0.1";
+        std::string targetIp;
         bool fc = false;
         std::string crypt = "none";    // not used right now
         std::string key = "rpipe123";   // not used right now
