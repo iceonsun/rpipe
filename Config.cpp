@@ -149,9 +149,7 @@ int Config::parse(bool is_server, int argc, char **argv) {
             if (daemon) {
                 this->isDaemon = (daemon.Get() != 0);
             }
-            break;
-        } while (true);
-
+        } while (false);
         checkAddr(param, is_server);
         return 0;
     } catch (args::Help &e) {
@@ -176,8 +174,8 @@ void Config::ParseJsonFile(Config &config, const std::string &fName, std::string
 
 Json Config::to_json() const {
     return Json::object {
-            {"isServer", isServer},
-            {"isDaemon", isDaemon},
+            {"server", isServer},
+            {"daemon", isDaemon},
             {"param",    Json::object {
                     {"localListenPort",  param.localListenPort},
                     {"localListenIface", param.localListenIface},
@@ -204,8 +202,8 @@ void Config::ParseJsonString(Config &config, const std::string &content, std::st
         return;
     }
 
-    if (json["isDaemon"].is_bool()) {
-        config.isDaemon = json["isDaemon"].bool_value();
+    if (json["daemon"].is_number()) {
+        config.isDaemon = (json["daemon"].int_value() != 0);
     }
 
     if (json["param"].is_object()) {

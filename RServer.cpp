@@ -44,6 +44,7 @@ int RServer::Loop(Config &conf) {
     mBrigde->Start();
     uv_run(mLoop, UV_RUN_DEFAULT);
     Close();
+    return 0;
 }
 
 void RServer::Close() {

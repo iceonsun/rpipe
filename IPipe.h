@@ -9,7 +9,7 @@
 #include <functional>
 
 
-#include <types.h>
+#include "ktype.h"
 #include "rcommon.h"
 
 #define PIPE_BUFSIZ 1500

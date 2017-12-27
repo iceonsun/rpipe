@@ -3,7 +3,6 @@
 //
 
 #include <cassert>
-#include <types.h>
 #include "RTimer.h"
 
 RTimer::RTimer(uv_loop_t *loop) {

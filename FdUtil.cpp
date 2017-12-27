@@ -6,8 +6,8 @@
 
 #include <unistd.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 #include "FdUtil.h"
-#include "BtmPipe.h"
 
 void FdUtil::CheckDgramFd(int fd) {
     checkFdType(fd, SOCK_DGRAM);
@@ -28,7 +28,7 @@ void FdUtil::checkFdType(int fd, int type) {
 int FdUtil::SetNonblocking(int &fd) {
     int oflag = fcntl(fd, F_GETFL, 0);
     int newFlag = oflag | O_NONBLOCK;
-    fcntl(fd, F_SETFL, newFlag);
+    return fcntl(fd, F_SETFL, newFlag);
 }
 
 void FdUtil::SetBlocking(int &fd) {

@@ -7,7 +7,7 @@
 
 
 #include <uv.h>
-#include <types.h>
+#include "ktype.h"
 
 #ifdef __cplusplus
 extern "C" {
