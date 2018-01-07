@@ -21,16 +21,8 @@ RClient::~RClient() {
 }
 
 int RClient::Loop(Config &conf) {
-//    mConv = iclock() % A_RRIME;   todo: add this later
-    conf.param.localListenPort = 10010;
-    conf.param.localListenIface = "127.0.0.1";
-
-    conf.param.targetIp = "127.0.0.1";
-    conf.param.targetPort = 10011;
-//    conf.param.targetIp = "47.95.217.247";
-
-    auto jsonStr = conf.to_json().dump();
-    std::cout << "config: \n" << jsonStr << std::endl;
+//    auto jsonStr = conf.to_json().dump();
+//    std::cout << "config: \n" << jsonStr << std::endl;
 
     mLoop = uv_default_loop();
     int nret = uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
