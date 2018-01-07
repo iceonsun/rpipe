@@ -8,11 +8,9 @@ int RApp::Main(int argc, char **argv) {
     Config conf;
     int ret = conf.parse(isServer(), argc, argv);
 
-//todo: remove this when release
-    if (isServer())
-        if (ret) {
-            return ret;
-        }
+    if (ret) {
+        return ret;
+    }
 
     return Loop(conf);
 }
