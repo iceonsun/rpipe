@@ -6,7 +6,7 @@
 #define RPIPE_CONFIG_H
 
 #include <string>
-#include "json/json11.hpp"
+#include "thirdparty/json11.hpp"
 
 struct Config {
     struct Param {

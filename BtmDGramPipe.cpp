@@ -6,7 +6,7 @@
 #include <syslog.h>
 #include <util.h>
 #include "BtmDGramPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 
 BtmDGramPipe::BtmDGramPipe(uv_udp_t *dgram) {

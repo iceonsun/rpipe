@@ -6,9 +6,9 @@
 #define RPIPE_RCLIENT_H
 
 
-#include "RApp.h"
-#include "BtmDGramPipe.h"
-#include "BridgePipe.h"
+#include "../RApp.h"
+#include "../BtmDGramPipe.h"
+#include "../BridgePipe.h"
 
 // RClient/RServer uses udp
 

@@ -4,7 +4,7 @@
 
 #include <syslog.h>
 #include "UdpBtmPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 UdpBtmPipe::UdpBtmPipe(int fd, uv_loop_t *loop) : BtmPipe(fd, loop) {
 

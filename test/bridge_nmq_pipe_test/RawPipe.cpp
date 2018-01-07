@@ -4,7 +4,7 @@
 
 #include <syslog.h>
 #include "RawPipe.h"
-#include "../../debug.h"
+#include "../../thirdparty/debug.h"
 
 int RawPipe::OnRecv(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {

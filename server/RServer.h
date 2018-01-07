@@ -6,7 +6,7 @@
 #define RPIPE_RSERVER_H
 
 
-#include "RApp.h"
+#include "../RApp.h"
 
 // todo: when target tcp is closed. we should notify peer to close.
 class RServer : public RApp {

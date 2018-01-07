@@ -8,7 +8,7 @@
 
 #include <nmq.h>
 #include <syslog.h>
-#include "debug.h"
+#include "thirdparty/debug.h"
 #include "ITopContainerPipe.h"
 #include "IRdWriter.h"
 

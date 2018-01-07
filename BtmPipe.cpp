@@ -5,8 +5,8 @@
 #include <unistd.h>
 #include <syslog.h>
 #include "BtmPipe.h"
-#include "debug.h"
-#include "FdUtil.h"
+#include "thirdparty/debug.h"
+#include "util/FdUtil.h"
 
 int BtmPipe::Close() {
     if (mFd >= 0) {

@@ -5,7 +5,7 @@
 #include <syslog.h>
 #include "../../BridgePipe.h"
 #include "EchoBtmPipe.h"
-#include "../../debug.h"
+#include "../../thirdparty/debug.h"
 #include "../../NMQPipe.h"
 #include "RawPipe.h"
 #include "../../SessionPipe.h"

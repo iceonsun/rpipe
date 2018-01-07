@@ -6,7 +6,7 @@
 #include <nmq.h>
 #include <syslog.h>
 #include "BridgePipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 BridgePipe::BridgePipe(IPipe *btmPipe) {
     mBtmPipe = btmPipe;

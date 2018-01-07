@@ -9,12 +9,12 @@
 #include <enc.h>
 #include <iostream>
 #include "RClient.h"
-#include "TopStreamPipe.h"
-#include "NMQPipe.h"
-#include "UdpBtmPipe.h"
-#include "TcpRdWriter.h"
-#include "SessionPipe.h"
-#include "RstSessionPipe.h"
+#include "../TopStreamPipe.h"
+#include "../NMQPipe.h"
+#include "../UdpBtmPipe.h"
+#include "../TcpRdWriter.h"
+#include "../SessionPipe.h"
+#include "../RstSessionPipe.h"
 
 
 RClient::~RClient() {

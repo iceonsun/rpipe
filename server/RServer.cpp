@@ -11,13 +11,13 @@
 #include <iostream>
 
 #include "RServer.h"
-#include "BtmDGramPipe.h"
-#include "NMQPipe.h"
-#include "TopStreamPipe.h"
-#include "UdpBtmPipe.h"
-#include "RstSessionPipe.h"
-#include "TcpRdWriter.h"
-#include "SessionPipe.h"
+#include "../BtmDGramPipe.h"
+#include "../NMQPipe.h"
+#include "../TopStreamPipe.h"
+#include "../UdpBtmPipe.h"
+#include "../RstSessionPipe.h"
+#include "../TcpRdWriter.h"
+#include "../SessionPipe.h"
 
 int RServer::Loop(Config &conf) {
 //    conf.param.localListenIface = "0.0.0.0";

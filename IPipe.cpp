@@ -5,7 +5,7 @@
 #include "BtmPipe.h"
 #include <syslog.h>
 #include "IPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 IPipe::~IPipe() {
     debug(LOG_ERR, "");

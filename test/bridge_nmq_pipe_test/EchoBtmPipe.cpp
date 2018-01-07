@@ -4,7 +4,7 @@
 
 #include <syslog.h>
 #include "EchoBtmPipe.h"
-#include "../../debug.h"
+#include "../../thirdparty/debug.h"
 
 int EchoBtmPipe::Send(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {

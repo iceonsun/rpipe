@@ -7,7 +7,7 @@
 
 
 #include "../../IPipe.h"
-#include "../../debug.h"
+#include "../../thirdparty/debug.h"
 
 class RawPipe : public IPipe {
 public:

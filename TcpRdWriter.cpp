@@ -7,9 +7,9 @@
 #include <sys/errno.h>
 #include <syslog.h>
 #include "TcpRdWriter.h"
-#include "FdUtil.h"
+#include "util/FdUtil.h"
 #include "rcommon.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 
 TcpRdWriter::TcpRdWriter(uv_stream_t *stream) {
@@ -76,9 +76,11 @@ void TcpRdWriter::write_cb(uv_write_t *write, int status) {
     rwrite_req_t *req = reinterpret_cast<rwrite_req_t *>(write);
     free_rwrite_req(req);
     if (status) {
-        debug(LOG_ERR, "write_cb err: %s", uv_strerror(status));
-        TcpRdWriter *rdWriter = static_cast<TcpRdWriter *>(req->write.data);
-        rdWriter->OnErr(status);
+        if (status != UV_ECANCELED) {
+            debug(LOG_ERR, "write_cb err: %s", uv_strerror(status));
+            TcpRdWriter *rdWriter = static_cast<TcpRdWriter *>(req->write.data);
+            rdWriter->OnErr(status);
+        }
     }
 }
 

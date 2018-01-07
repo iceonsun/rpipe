@@ -7,7 +7,7 @@
 #include <util.h>
 #include <nmq.h>
 #include "TopStreamPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 TopStreamPipe::TopStreamPipe(uv_stream_t *stream) {
     mTopStream = stream;

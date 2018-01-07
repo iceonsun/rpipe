@@ -7,7 +7,7 @@
 #include <sstream>
 #include <nmq.h>
 #include "SessionPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target)
         : ISessionPipe(pipe, key, target) {

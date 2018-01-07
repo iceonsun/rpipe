@@ -4,7 +4,7 @@
 
 #include <syslog.h>
 #include "RstSessionPipe.h"
-#include "debug.h"
+#include "thirdparty/debug.h"
 
 RstSessionPipe::RstSessionPipe(IPipe *pipe, const KeyType &key, const sockaddr_in *target)
         : ISessionPipe(pipe, key, target) {}

@@ -9,8 +9,8 @@
 #include <arpa/inet.h>
 #include "Config.h"
 #include "args.hxx"
-#include "FdUtil.h"
-#include "debug.h"
+#include "util/FdUtil.h"
+#include "thirdparty/debug.h"
 
 using namespace json11;
 
