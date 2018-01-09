@@ -32,7 +32,7 @@ public:
 public:
     static int IsCloseSignal(ssize_t nread, const rbuf_t *buf);
 
-    static KeyType BuildKey(int conv, const struct sockaddr_in *addr);
+    static KeyType BuildKey(IUINT32 conv, const struct sockaddr_in *addr);
 
     // if declared static inline, cannot compile
     static KeyType BuildKey(ssize_t nread, const rbuf_t *rbuf);
@@ -45,14 +45,14 @@ protected:
 
     static const char *decodeHead(const char *base, int len, char *cmd, IUINT32 *conv);
 
-    static int decodeConv(const KeyType &key);
+    static IUINT32 decodeConv(const KeyType &key);
 
     void notifyPeerClose(char cmd = FIN);
 
 protected:
     KeyType mKey;
     struct sockaddr_in *mAddr = nullptr;
-    int mConv;
+    IUINT32 mConv = 0;
 };
 
 

@@ -56,7 +56,7 @@ public:
 
     virtual void SetOnErrCb(const ErrCb &cb);
 
-    virtual int Close() = 0;
+    virtual int Close();
 
     virtual void Flush(IUINT32 curr) {}
 

@@ -11,7 +11,6 @@
 class ITopContainerPipe : public IPipe {
 public:
     explicit ITopContainerPipe(IPipe *topPipe);
-    virtual ~ITopContainerPipe();
 
     int Init() override;
 
@@ -26,7 +25,7 @@ public:
 
 
 private:
-    IPipe *mTopPipe;
+    IPipe *mTopPipe = nullptr;
 };
 
 

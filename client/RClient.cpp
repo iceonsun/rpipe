@@ -6,24 +6,20 @@
 #include <cstdlib>
 #include <nmq.h>
 #include <sstream>
-#include <enc.h>
 #include <iostream>
+#include <syslog.h>
 #include "RClient.h"
 #include "../TopStreamPipe.h"
-#include "../NMQPipe.h"
-#include "../UdpBtmPipe.h"
-#include "../TcpRdWriter.h"
 #include "../SessionPipe.h"
 #include "../RstSessionPipe.h"
+#include "../NMQPipe.h"
+#include "../thirdparty/debug.h"
 
 
 RClient::~RClient() {
 }
 
 int RClient::Loop(Config &conf) {
-//    auto jsonStr = conf.to_json().dump();
-//    std::cout << "config: \n" << jsonStr << std::endl;
-
     mLoop = uv_default_loop();
     int nret = uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
     if (nret != 0) {
@@ -50,17 +46,17 @@ int RClient::Loop(Config &conf) {
     return 0;
 }
 
-//IPipe *RClient::CreateBtmPipe(const Config &conf) {
-//    uv_udp_t *dgram = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
-//    uv_udp_init(mLoop, dgram);
-//
-//    return new BtmDGramPipe(dgram);
-//}
-
 IPipe *RClient::CreateBtmPipe(const Config &conf) {
-    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    return new UdpBtmPipe(sock, mLoop);
+    uv_udp_t *dgram = static_cast<uv_udp_t *>(malloc(sizeof(uv_udp_t)));
+    uv_udp_init(mLoop, dgram);
+
+    return new BtmDGramPipe(dgram);
 }
+
+//IPipe *RClient::CreateBtmPipe(const Config &conf) {
+//    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//    return new UdpBtmPipe(sock, mLoop);
+//}
 
 void RClient::Close() {
     if (mBridge) {
@@ -133,10 +129,11 @@ void RClient::newConn(uv_stream_t *server, int status) {
 
 void RClient::onNewClient(uv_stream_t *client) {
     mConv++;
-//    IPipe *top = new TopStreamPipe(client);
+    IPipe *top = new TopStreamPipe(client);
+    IPipe *nmq = new NMQPipe(mConv, top);   // nmq pipe addr
 
-    IRdWriter *rdWriter = new TcpRdWriter(client);
-    IPipe *nmq = new NMQPipe(mConv, rdWriter);   // nmq pipe addr
+//    IRdWriter *rdWriter = new TcpRdWriter(client);
+//    IPipe *nmq = new NMQPipe(mConv, rdWriter);   // nmq pipe addr
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, &mTargetAddr);
     sess->SetExpireIfNoOps(20); // todo: fill value from conf
 

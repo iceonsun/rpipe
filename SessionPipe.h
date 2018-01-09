@@ -19,9 +19,7 @@ public:
     // this two methods should be declared here. remove them from ipipe
     SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target);
 
-    SessionPipe(IPipe *pipe, uv_loop_t *loop, int conv, const sockaddr_in *target);
-
-    ~SessionPipe() override;
+    SessionPipe(IPipe *pipe, uv_loop_t *loop, IUINT32 conv, const sockaddr_in *target);
 
     virtual void SetExpireIfNoOps(IUINT32 sec);
 
@@ -52,7 +50,7 @@ private:
     IUINT32 mCnt = 0;
     IUINT32 mLastCnt = 0;
     RTimer *mRepeatTimer = nullptr;
-    uv_loop_t *mLoop;
+    uv_loop_t *mLoop = nullptr;
 };
 
 

@@ -2,13 +2,15 @@
 // Created on 11/13/17.
 //
 
-#include "BtmPipe.h"
 #include <syslog.h>
 #include "IPipe.h"
-#include "thirdparty/debug.h"
 
 IPipe::~IPipe() {
-    debug(LOG_ERR, "");
+#ifndef RPIPE_NNDEBUG
+    assert(mOutputCb == nullptr);
+    assert(mOnRecvCb == nullptr);
+    assert(mErrCb == nullptr);
+#endif
 }
 
 int IPipe::Output(ssize_t nread, const rbuf_t *buf) {
@@ -49,5 +51,11 @@ void IPipe::OnError(IPipe *pipe, int err) {
 
 void IPipe::SetOnErrCb(const ErrCb &cb) {
     mErrCb = cb;
+}
+
+int IPipe::Close() {
+    mOutputCb = nullptr;
+    mOnRecvCb = nullptr;
+    mErrCb = nullptr;
 }
 

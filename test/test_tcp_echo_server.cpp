@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include "../rcommon.h"
 
-const static int port = 10022;
+const static int port = 20001;
 const static char *iface = "127.0.0.1";
 
 uv_tcp_t tcpSvr;

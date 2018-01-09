@@ -35,22 +35,19 @@ int BtmDGramPipe::Close() {
 int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0 && buf->data) {
         auto req = (rudp_send_t *) malloc(sizeof(rudp_send_t));
+        memset(req, 0, sizeof(rudp_send_t));
+
         req->udp_send.data = this;
-        req->buf = uv_buf_init(buf->base, nread);
+        req->buf = uv_buf_init(buf->base, nread);   // base and data are malloced by self
         req->addr = static_cast<sockaddr *>(buf->data);
 
-        struct sockaddr_in *addr = reinterpret_cast<sockaddr_in *>(req->addr);
-        debug(LOG_ERR, "req: %p. send %d bytes to %s:%d. curr: %d.", req, nread, inet_ntoa(addr->sin_addr),
-              ntohs(addr->sin_port), iclock() % 10000);
-
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(req), mDgram, &req->buf, 1,
-                    reinterpret_cast<const sockaddr *>(req->addr), send_cb);
+                    reinterpret_cast<const sockaddr *>(buf->data), send_cb);
     }
     return 0;
 }
 
 void BtmDGramPipe::send_cb(uv_udp_send_t *req, int status) {
-    debug(LOG_ERR, "req: %p, status: %d, error: %s, curr: %d\n", req, status, status ? uv_strerror(status) : "", iclock() % 10000);
     auto send = reinterpret_cast<rudp_send_t *>(req);
     auto pipe = (BtmDGramPipe *) send->udp_send.data;
     send->udp_send.data = nullptr;

@@ -7,28 +7,19 @@
 
 #include <sstream>
 
-#include <unistd.h>
 #include <iostream>
+#include <util.h>
+#include <syslog.h>
 
 #include "RServer.h"
 #include "../BtmDGramPipe.h"
-#include "../NMQPipe.h"
 #include "../TopStreamPipe.h"
-#include "../UdpBtmPipe.h"
 #include "../RstSessionPipe.h"
-#include "../TcpRdWriter.h"
 #include "../SessionPipe.h"
+#include "../NMQPipe.h"
+#include "../thirdparty/debug.h"
 
 int RServer::Loop(Config &conf) {
-//    conf.param.localListenIface = "0.0.0.0";
-//    conf.param.localListenPort = 10011;
-
-//    conf.param.targetIp = "127.0.0.1";
-//    conf.param.targetPort = 10022;
-
-    auto jsonStr = conf.to_json().dump();
-    std::cout << "config: \n" << jsonStr << std::endl;
-
     mLoop = uv_default_loop();
     mConf = conf;
 
@@ -136,10 +127,21 @@ ISessionPipe *RServer::OnRawData(const ISessionPipe::KeyType &key, const void *a
 }
 
 ISessionPipe *RServer::CreateStreamPipe(int sock, const ISessionPipe::KeyType &key, const void *arg) {
-    IRdWriter *rdWriter = new TcpRdWriter(sock, mLoop);
+    uv_tcp_t *tcp = static_cast<uv_tcp_t *>(malloc(sizeof(uv_tcp_t)));
+    uv_tcp_init(mLoop, tcp);
+    int n = uv_tcp_open(tcp, sock);
+    if (n) {
+        free(tcp);
+        debug(LOG_ERR, "uv_tcp_open failed: %s", uv_strerror(n));
+        return nullptr;
+    }
+    IPipe *top = new TopStreamPipe((uv_stream_t*)tcp);
+
+//    IRdWriter *rdWriter = new TcpRdWriter(sock, mLoop);
     // bug here. mConv should match conv in key
     IUINT32 conv = ISessionPipe::ConvFromKey(key);
-    NMQPipe *nmq = new NMQPipe(conv, rdWriter);
+    IPipe *nmq = new NMQPipe(conv, top);
+//    NMQPipe *nmq = new NMQPipe(conv, rdWriter);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     auto *sess = new SessionPipe(nmq, mLoop, key, addr);
     sess->SetExpireIfNoOps(20);

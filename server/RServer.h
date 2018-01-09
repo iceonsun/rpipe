@@ -32,8 +32,8 @@ private:
     virtual ISessionPipe *CreateStreamPipe(int sock, const ISessionPipe::KeyType &key, const void *addr);
 
 private:
-    uv_loop_t *mLoop;
-    BridgePipe *mBrigde;
+    uv_loop_t *mLoop = nullptr;
+    BridgePipe *mBrigde = nullptr;
     uv_timer_t mFlushTimer;
     Config mConf;
     struct sockaddr_in mTargetAddr;

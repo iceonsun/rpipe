@@ -14,9 +14,9 @@ TopStreamPipe::TopStreamPipe(uv_stream_t *stream) {
 }
 
 int TopStreamPipe::Init() {
-    uv_read_start(mTopStream, alloc_buf, echo_read);
+    int n = uv_read_start(mTopStream, alloc_buf, echo_read);
     mTopStream->data = this;
-    return 0;
+    return n;
 }
 
 // lower -> Pipe
@@ -39,6 +39,8 @@ int TopStreamPipe::Input(ssize_t nread, const rbuf_t *buf) {
 
 
 int TopStreamPipe::Close() {
+    IPipe::Close();
+
     if (mTopStream) {
         uv_close(reinterpret_cast<uv_handle_t *>(mTopStream), close_cb);
         mTopStream->data = nullptr;
@@ -49,12 +51,6 @@ int TopStreamPipe::Close() {
 
 void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     auto pipe = (TopStreamPipe *) stream->data;
-
-#ifndef NNDEBUG
-    if (nread > 0) {
-        debug(LOG_ERR, "read %d bytes: %.*s. curr: %d", nread, nread, buf, iclock() % 10000);
-    }
-#endif
 
     rbuf_t rbuf = {0};
     rbuf.base = buf->base;
@@ -102,6 +98,3 @@ int TopStreamPipe::OnRecv(ssize_t nread, const rbuf_t *buf) {
     fprintf(stderr, "cannot call onrecv on a top stream pipe\n");
     return -1;
 }
-
-
-

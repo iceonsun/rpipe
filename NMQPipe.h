@@ -1,49 +1,43 @@
 //
-// Created on 11/13/17.
+// Created on 1/8/18.
 //
 
-#ifndef RPIPE_NMQPIPE_H
-#define RPIPE_NMQPIPE_H
+#ifndef RPIPE_STREAMNMQPIPE_H
+#define RPIPE_STREAMNMQPIPE_H
 
-
-#include <nmq.h>
-#include <syslog.h>
-#include "thirdparty/debug.h"
 #include "ITopContainerPipe.h"
-#include "IRdWriter.h"
 
-class NMQPipe : public IPipe {
+struct nmq_s;
+
+class NMQPipe : public ITopContainerPipe {
 public:
-
-    NMQPipe(IUINT32 conv, IRdWriter *rdwr);
+    NMQPipe(IUINT32 conv, IPipe *topPipe);
 
     ~NMQPipe() override;
 
     int Init() override;
 
-    int Input(ssize_t nread, const rbuf_t *buf) override;
+    void Flush(IUINT32 curr) override;
 
     int Close() override;
 
-    void Flush(IUINT32 curr) override;
+    int Input(ssize_t nread, const rbuf_t *buf) override;
+
+    int Send(ssize_t nread, const rbuf_t *buf) override;
 
 protected:
     static IINT32 nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg);
-    static IINT32 read_cb(NMQ *nmq, char *buf, int len, int *err);
-
     void nmqRecvDone();
     void nmqSendDone();
-    int onRecvCb(ssize_t nread, const rbuf_t *buf);
 
 private:
-    int nmqRecv(NMQ *nmq);
+    int nmqRecv(struct nmq_s *nmq);
 
 private:
     IUINT32 mConv = 0;
-    NMQ *mNmq = nullptr;
 
-    IRdWriter *mRdWriter;
+    struct nmq_s *mNmq = nullptr;
 };
 
 
-#endif //RPIPE_NMQPIPE_H
+#endif //RPIPE_STREAMNMQPIPE_H

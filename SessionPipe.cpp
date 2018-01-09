@@ -14,13 +14,8 @@ SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const
     mLoop = loop;
 }
 
-SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, int conv, const sockaddr_in *target)
+SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, IUINT32 conv, const sockaddr_in *target)
         : SessionPipe(pipe, loop, BuildKey(conv, target), target) {
-}
-
-SessionPipe::~SessionPipe() {
-    debug(LOG_ERR, "");
-    assert(mRepeatTimer == nullptr);
 }
 
 void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
@@ -31,7 +26,6 @@ void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
     }
     debug(LOG_ERR, "set timeout. sec: %d. current: %d", sec, time(0));
 
-    assert(mLoop != nullptr);
     mRepeatTimer = new RTimer(mLoop);
 
     if (sec > 0) {
@@ -68,7 +62,10 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
             onPeerRst();
         } else {
             rbuf_t rbuf = {0};
-            rbuf.base = const_cast<char *>(p);
+            char tmp[nread - headLen] = {0};
+            memcpy(tmp, p, nread - headLen);
+            rbuf.base = tmp;
+//            rbuf.base = const_cast<char *>(p);
             rbuf.data = nullptr;
             if (nread == headLen) {
                 return 0;   // 0 bytes. do nothing.
@@ -108,6 +105,7 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
 int SessionPipe::Close() {
     ISessionPipe::Close();
 
+    debug(LOG_ERR, "%s %p", __FUNCTION__, this);
     if (mRepeatTimer) {
         mRepeatTimer->Stop();
         delete mRepeatTimer;

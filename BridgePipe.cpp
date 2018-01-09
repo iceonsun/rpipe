@@ -29,6 +29,7 @@ int BridgePipe::Init() {
 }
 
 int BridgePipe::Close() {
+    IPipe::Close();
     if (!mTopPipes.empty()) {
         removeAll();
     }
@@ -132,9 +133,9 @@ void BridgePipe::Start() {
 // if (key) must be true
 int BridgePipe::AddPipe(ISessionPipe *pipe) {
     if (pipe && !pipe->GetKey().empty()) {
-        const ISessionPipe::KeyType &key = pipe->GetKey();
+        const auto &key = pipe->GetKey();
 
-        auto ret = mTopPipes.insert(std::make_pair(key, pipe));
+        auto ret = mTopPipes.insert({key, pipe});
         debug(LOG_ERR, "key: %s, pipe1: %p, pipe2: %p, ok:%d", key.c_str(), pipe, mTopPipes[key], ret.second);
         if (!ret.second) {
             debug(LOG_ERR, "insert failed. duplicate pipe");
@@ -169,16 +170,19 @@ void BridgePipe::Flush(IUINT32 curr) {
     mBtmPipe->Flush(curr);  // normall this will not be necessary if btm pipe input data passively from other soruce
 
     cleanErrPipes();
-    for (auto &e: mTopPipes) {
-        e.second->Flush(curr);
+    for (auto it = mTopPipes.begin(); it != mTopPipes.end(); it++) {
+        it->second->Flush(curr);
     }
+//    for (auto &e: mTopPipes) {
+//        e.second->Flush(curr);
+//    }
     cleanErrPipes();
 }
 
 void BridgePipe::cleanErrPipes() {
     for (auto &e: mErrPipes) {
-        auto it = mTopPipes.find(e.first);
-        mTopPipes.erase(it);
+        debug(LOG_ERR, "deleting pipe: %p", e.second);
+        mTopPipes.erase(e.first);
         e.second->Close();
         delete e.second;
     }

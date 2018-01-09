@@ -65,12 +65,12 @@ const char *ISessionPipe::decodeHead(const char *base, int len, char *cmd, IUINT
     return decode_uint32(conv, base + 1);
 }
 
-ISessionPipe::KeyType ISessionPipe::BuildKey(int conv, const struct sockaddr_in *addr) {
+ISessionPipe::KeyType ISessionPipe::BuildKey(IUINT32 conv, const struct sockaddr_in *addr) {
     std::ostringstream out;
     if (addr == nullptr) {
-        out << ":" << std::__cxx11::to_string(conv);
+        out << ":" << std::to_string(conv);
     } else {
-        out << inet_ntoa(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ":" << std::__cxx11::to_string(conv);
+        out << inet_ntoa(addr->sin_addr) << ":" << ntohs(addr->sin_port) << ":" << std::to_string(conv);
     }
     return out.str();
 }
@@ -102,16 +102,13 @@ IUINT32 ISessionPipe::ConvFromKey(const ISessionPipe::KeyType &key) {
     return 0;
 }
 
-int ISessionPipe::decodeConv(const ISessionPipe::KeyType &key) {
+IUINT32 ISessionPipe::decodeConv(const ISessionPipe::KeyType &key) {
     auto pos = key.rfind(':');
     if (pos == std::string::npos || pos == key.length() - 1) {
-        return -1;
+        return 0;
     }
-    long conv = stol(key.substr(pos + 1));
-    if (conv < 0) {
-        return -1;
-    }
-    return static_cast<int>(conv);
+    unsigned long conv = std::stoul(key.substr(pos + 1));
+    return static_cast<IUINT32>(conv);
 }
 
 void ISessionPipe::notifyPeerClose(char cmd) {
@@ -120,5 +117,5 @@ void ISessionPipe::notifyPeerClose(char cmd) {
     ssize_t n = insertHead(base, HEAD_LEN, cmd, mConv);
     rbuf.base = base;
     rbuf.data = mAddr;
-    Send(n, &rbuf);
+    ISessionPipe::Send(n, &rbuf);
 }

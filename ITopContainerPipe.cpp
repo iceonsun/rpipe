@@ -3,7 +3,9 @@
 //
 
 #include <cassert>
+#include <syslog.h>
 #include "ITopContainerPipe.h"
+#include "thirdparty/debug.h"
 
 using namespace std::placeholders;
 
@@ -11,33 +13,33 @@ ITopContainerPipe::ITopContainerPipe(IPipe *pipe) {
     mTopPipe = pipe;
 }
 
-ITopContainerPipe::~ITopContainerPipe() {
-    assert(mTopPipe == nullptr);
-}
-
 int ITopContainerPipe::Init() {
+    IPipe::Init();
     if (mTopPipe) {
         mTopPipe->Init();
-        auto send = std::bind(&ITopContainerPipe::Send, this, _1, _2);
-        mTopPipe->SetOutputCb(send);
+        auto sendfn = std::bind(&ITopContainerPipe::Send, this, _1, _2);
+        mTopPipe->SetOutputCb(sendfn);
 
-        auto recv = std::bind(&IPipe::Input, mTopPipe, _1, _2);
-        SetOnRecvCb(recv);
+        auto recvfn = std::bind(&IPipe::Input, mTopPipe, _1, _2);
+        SetOnRecvCb(recvfn);
 
         mTopPipe->SetOnErrCb([this] (IPipe *pipe, int err) {
             this->OnError((IPipe*)this, err);
         });
     }
 
-    return IPipe::Init();
+    return 0;
 }
 
 int ITopContainerPipe::Close() {
+    IPipe::Close();
     if (mTopPipe) {
-        mTopPipe->SetOnErrCb(nullptr);
+        mTopPipe->SetOutputCb(nullptr);
+//        mTopPipe->SetOnErrCb(nullptr);  a huge bug!!!
         SetOnRecvCb(nullptr);
         mTopPipe->SetOnErrCb(nullptr);
 
+        debug(LOG_ERR, "%s, deleting toppipe: %p", __FUNCTION__, mTopPipe);
         mTopPipe->Close();
 
         delete mTopPipe;

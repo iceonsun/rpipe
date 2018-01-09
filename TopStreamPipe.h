@@ -15,14 +15,10 @@ public:
 
     int Init() override;
 
-//    int OnRecv(ssize_t nread, const uv_buf_t *buf) override;
-
     int Input(ssize_t nread, const rbuf_t *buf) override;
 
-    // invalid
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
-    // invalid
     int OnRecv(ssize_t nread, const rbuf_t *buf) override;
 
     int Close() override;
@@ -33,7 +29,7 @@ protected:
     static void write_cb(uv_write_t *uvreq, int status);
 
 private:
-    uv_stream_t *mTopStream;
+    uv_stream_t *mTopStream = nullptr;
 };
 
 
