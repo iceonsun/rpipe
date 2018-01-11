@@ -2,17 +2,12 @@
 // Created on 1/8/18.
 //
 
-#include <syslog.h>
 #include <nmq.h>
+#include <plog/Log.h>
 #include "NMQPipe.h"
-#include "thirdparty/debug.h"
 
 NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
     mConv = conv;
-}
-
-NMQPipe::~NMQPipe() {
-    debug(LOG_ERR, "%s: %p", __FUNCTION__, this);
 }
 
 int NMQPipe::Init() {
@@ -26,12 +21,10 @@ int NMQPipe::Init() {
 }
 
 int NMQPipe::Close() {
-    debug(LOG_ERR, "%s: %p, nmq: %p", __FUNCTION__, this, mNmq);
     ITopContainerPipe::Close();
 
     if (mNmq) {
         nmq_destroy(mNmq);
-//        memset(mNmq, 0, sizeof(NMQ)); bug!!!
         mNmq = nullptr;
     }
     return 0;
@@ -51,14 +44,13 @@ IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, 
         pipe->nmqSendDone();
         nret = 0;
     } else {
-        debug(LOG_ERR, "unrecognized len: %d", len);
+        LOGE << "unrecognized len: " << len;
     }
 
     return nret;
 }
 
 void NMQPipe::nmqRecvDone() {
-    debug(LOG_ERR, "nmq recv done.");
 //    nmqRecv(mNmq);  // stack overflows
     rbuf_t rbuf = {0};
     Output(UV_EOF, &rbuf);
@@ -66,7 +58,6 @@ void NMQPipe::nmqRecvDone() {
 
 void NMQPipe::nmqSendDone() {
 //    nmqRecv(mNmq);  // no need to recv because self closed
-    debug(LOG_ERR, "nmq send done.");
     rbuf_t rbuf = {0};
     Output(UV_EOF, &rbuf);
 }
@@ -83,12 +74,12 @@ int NMQPipe::nmqRecv(struct nmq_s *nmq) {
 
     // todo: 是bufsize太小
     while ((nret = nmq_recv(nmq, buf.base, SIZE)) > 0) {
-        debug(LOG_ERR, "nmq_recv: %d", nret);
+        LOGV << "nmq_recv: " << nret;
         tot += nret;
         OnRecv(nret, &buf);
     }
     if (nret < 0) {
-        debug(LOG_ERR, "nmq_recv %p, error: %d", this, nret);
+        LOGE << "nmq_recv, error " << nret;
     }
     if (nret == NMQ_RECV_EOF) {
         nmqRecvDone();
@@ -111,11 +102,10 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
         // omit allocating buf here. becuase we know nmq will not reuse buf.
         nret = nmq_input(mNmq, buf->base, nread);
         if (NMQ_ERR_CONV_DIFF == nret) {
-            debug(LOG_ERR, "self conv: %u, data conv: %u", mConv, nmq_get_conv(buf->base));
+            LOGE << "self conv: " << mConv << ", data conv: " << nmq_get_conv(buf->base) << " don't match";
             return NMQ_ERR_CONV_DIFF;
         }   // other error just ignore it
-//        nmq_flush(mNmq, iclock()); // todo: check if necessary or better place
-        debug(LOG_ERR, "nmq_input %d bytes. ret: %d, current: %d", nread, nret, iclock() % 10000);
+        LOGV << "nmq_input " << nread << " bytes, ret: " << nret;
         if (nret >= 0) {
             int n = nmqRecv(mNmq);
             return n;

@@ -13,8 +13,6 @@ class NMQPipe : public ITopContainerPipe {
 public:
     NMQPipe(IUINT32 conv, IPipe *topPipe);
 
-    ~NMQPipe() override;
-
     int Init() override;
 
     void Flush(IUINT32 curr) override;

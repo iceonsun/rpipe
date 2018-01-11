@@ -3,11 +3,10 @@
 //
 
 #include <cassert>
-#include <syslog.h>
 #include <sstream>
 #include <nmq.h>
+#include <plog/Log.h>
 #include "SessionPipe.h"
-#include "thirdparty/debug.h"
 
 SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target)
         : ISessionPipe(pipe, key, target) {
@@ -21,10 +20,9 @@ SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, IUINT32 conv, const socka
 void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
     assert(sec >= MIN_EXPIRE_SEC && sec < MAX_EXPIRE_SEC);
     if (mRepeatTimer) {
-        debug(LOG_ERR, "timer running.");
+        LOGD << "timer already running";
         return;
     }
-    debug(LOG_ERR, "set timeout. sec: %d. current: %d", sec, time(0));
 
     mRepeatTimer = new RTimer(mLoop);
 
@@ -35,7 +33,7 @@ void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
 }
 
 void SessionPipe::timer_cb(void *arg) {
-    debug(LOG_ERR, "timeout. current: %d", time(0));
+    LOGV << "timeout. current: " << time(0);
     if (mCnt == mLastCnt) { // no data flow during last period
         timeoutToClose();
     }
@@ -51,9 +49,9 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
         const auto key = BuildKey(nread, buf);
         const char *p = decodeHead(buf->base, nread, &cmd, &conv);
         int headLen = p - buf->base;
-        debug(LOG_ERR, "sess: %s cmd: %d", mKey.c_str(), cmd);
+        LOGV << "sess: " << key << ", cmd: " << (int) cmd;
         if (key != mKey) {
-            debug(LOG_ERR, "conv doesn't match");
+            LOGE << "doesn't match session ke: " << mKey;
             return 0;
         } else if (cmd == FIN) {
             onPeerEof();
@@ -65,7 +63,7 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
             char tmp[nread - headLen] = {0};
             memcpy(tmp, p, nread - headLen);
             rbuf.base = tmp;
-//            rbuf.base = const_cast<char *>(p);
+//            rbuf.base = const_cast<char *>(p);    // todo: uncomment
             rbuf.data = nullptr;
             if (nread == headLen) {
                 return 0;   // 0 bytes. do nothing.
@@ -73,7 +71,7 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
             return ISessionPipe::Input(nread - headLen, &rbuf);
         }
     } else if (nread > 0) {
-        debug(LOG_ERR, "broken msg: key: %s, nread: %d", mKey.c_str(), nread);
+        LOGE << "broken msg: key: " << mKey << ", nread: " << nread;
         return 0;   // broken msg
     }
     return nread;   // we don't process error here. it's processed in bridgepipe
@@ -84,12 +82,12 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
     if (nread > 0) {
         int nret = doSend(nread, buf);
         if (nret < 0) {
-            debug(LOG_ERR, "send error: %d", nret);
+            LOGE << "send error: " << nret;
             OnError(this, nret);
         }
         return nret;
     } else if (nread < 0) {
-        debug(LOG_ERR, "err state: %d", nread);
+        LOGV_IF(nread != UV_EOF) << "err state: " << nread;
         if (nread == UV_EOF) {
             onSelfEof();
             return nread;
@@ -105,7 +103,6 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
 int SessionPipe::Close() {
     ISessionPipe::Close();
 
-    debug(LOG_ERR, "%s %p", __FUNCTION__, this);
     if (mRepeatTimer) {
         mRepeatTimer->Stop();
         delete mRepeatTimer;
@@ -134,17 +131,15 @@ int SessionPipe::doSend(ssize_t nread, const rbuf_t *buf) {
 
 // flush is forbidden here. it may cause recursion and stackoverflow
 void SessionPipe::onPeerEof() {
-    debug(LOG_ERR, "onPeerEof.");
+    LOGV << "peer eof, self key: " << mKey;
     OnError(this, UV_EOF);  // report error and close
 }
 
 void SessionPipe::onSelfEof() {
-    debug(LOG_ERR, "onSelfEof. close self. don't close peer. curr: %d", iclock() % 10000);
-//    notifyPeerClose();
     OnError(this, UV_EOF);  // 注释掉以后继续发。观察关掉本段后，对面的情况.
 }
 
 void SessionPipe::onPeerRst() {
-    debug(LOG_ERR, "peer rst");
+    LOGV << "peer rst, self key: " << mKey;
     OnError(this, UV_EOF);
 }

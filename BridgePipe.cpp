@@ -4,9 +4,8 @@
 
 #include <cassert>
 #include <nmq.h>
-#include <syslog.h>
+#include <plog/Log.h>
 #include "BridgePipe.h"
-#include "thirdparty/debug.h"
 
 BridgePipe::BridgePipe(IPipe *btmPipe) {
     mBtmPipe = btmPipe;
@@ -15,7 +14,7 @@ BridgePipe::BridgePipe(IPipe *btmPipe) {
 int BridgePipe::Init() {
     IPipe::Init();
 
-    mBtmPipe->Init();   // todo init must be called. make IPipe::Init non pure virtual. adn create start.
+    mBtmPipe->Init();
 
     auto out = std::bind(&IPipe::Send, mBtmPipe, std::placeholders::_1, std::placeholders::_2);
     SetOutputCb(out);
@@ -54,7 +53,6 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
     if (nread >= ISessionPipe::HEAD_LEN) {
         ISessionPipe::KeyType key = ISessionPipe::BuildKey(nread, buf);
         ISessionPipe *sess = FindPipe(key);
-        debug(LOG_ERR, "key: %s, sess: %p", key.c_str(), sess);
         if (ISessionPipe::IsCloseSignal(nread, buf)) {
             if (!sess) {    // if doesn't exist. we do nothing. otherwise we pass it to sessppe.
                 return 0;
@@ -72,13 +70,13 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
         }
         nret = sess->Input(nread, buf);
         if (nret < 0) {
-            debug(LOG_ERR, "session pipe error: %d.  close pipe: %p", nret, sess);
-            RemovePipe(sess);   // todo: add onpipeclose
+            LOGE_IF(nret != UV_EOF) << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+            RemovePipe(sess);
         }
     } else if (nread < 0) {
         OnBtmPipeError(mBtmPipe, nread);
     } else {
-        debug(LOG_ERR, "invalid data, nread: %d\n", nread);
+        LOGV << "broken data, nread: " << nread;
     }
     return nret;
 }
@@ -86,7 +84,7 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
 int BridgePipe::RemovePipe(ISessionPipe *pipe) {
     auto it = mTopPipes.find(pipe->GetKey());
     if (it == mTopPipes.end()) {
-        debug(LOG_ERR, "pipe %p don't belong to bridge pipe.", pipe);
+        LOGE << "pipe " << pipe->GetKey() << " don't belong to bridge pipe.";
     }
     doRemove(it);
 
@@ -102,20 +100,11 @@ int BridgePipe::removeAll() {
 
 int BridgePipe::doRemove(std::map<ISessionPipe::KeyType, ISessionPipe *>::iterator it) {
     if (it != mTopPipes.end()) {
-//        mTopPipes.erase(it);
-        debug(LOG_ERR, "remove pipe: %p\n", it->second);
         IPipe *pipe = it->second;
         pipe->SetOutputCb(nullptr);
         pipe->SetOnErrCb(nullptr);
 
         mErrPipes.insert(*it);
-//        mUselessPipe.push_back(it->second);
-    } else {
-#ifndef NNDEBUG
-        assert(it != mTopPipes.end());
-#else
-        debug(LOG_ERR, "pipe don't belong to bridge pipe: key: %s, %p", it->first.c_str(), it->second);
-#endif
     }
     return 0;
 }
@@ -136,9 +125,9 @@ int BridgePipe::AddPipe(ISessionPipe *pipe) {
         const auto &key = pipe->GetKey();
 
         auto ret = mTopPipes.insert({key, pipe});
-        debug(LOG_ERR, "key: %s, pipe1: %p, pipe2: %p, ok:%d", key.c_str(), pipe, mTopPipes[key], ret.second);
+        LOGV << "add pipe: " << pipe->GetKey();
         if (!ret.second) {
-            debug(LOG_ERR, "insert failed. duplicate pipe");
+            LOGE << "insert failed. duplicate pipe";
             return -1;
         }
 
@@ -150,16 +139,11 @@ int BridgePipe::AddPipe(ISessionPipe *pipe) {
         // no need cast. caputure parameter pipe
         pipe->SetOnErrCb([this](IPipe *p, int err) {
             ISessionPipe *sess = dynamic_cast<ISessionPipe *>(p);
-
-#ifndef NNDEBUG
-            this->OnTopPipeError(sess, err);
-#else
             if (sess) {
                 this->OnTopPipeError(sess, err);
             } else {
-                debug(LOG_ERR, "dynamic_cast failed");
+                LOGE << "dynamic_cast failed for pipe: " << p;
             }
-#endif
         });
     }
     return 0;
@@ -181,7 +165,7 @@ void BridgePipe::Flush(IUINT32 curr) {
 
 void BridgePipe::cleanErrPipes() {
     for (auto &e: mErrPipes) {
-        debug(LOG_ERR, "deleting pipe: %p", e.second);
+        LOGV << "deleting pipe: " << e.second->GetKey();
         mTopPipes.erase(e.first);
         e.second->Close();
         delete e.second;
@@ -191,13 +175,13 @@ void BridgePipe::cleanErrPipes() {
 
 
 void BridgePipe::OnTopPipeError(ISessionPipe *pipe, int err) {
-    debug(LOG_ERR, "pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
+    LOGE_IF(err != UV_EOF) << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
     RemovePipe(pipe);
 }
 
 void BridgePipe::OnBtmPipeError(IPipe *pipe, int err) {
     assert(pipe == mBtmPipe);   // typically sendto will not fail
-    debug(LOG_ERR, "btm pipe %p error: %d, %s\n", pipe, err, uv_strerror(err));
+    LOGE_IF(err != UV_EOF) << "btm pipe error " << err << ": " << uv_strerror(err);
     OnError(this, err);
 }
 

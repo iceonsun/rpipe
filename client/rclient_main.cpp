@@ -7,5 +7,13 @@
 
 int rclient_main(int argc, char **argv) {
     RApp *app = new RClient();
-    return app->Main(argc, argv);
+    int nret = app->Parse(argc, argv);
+    if (!nret) {
+        if (!(nret = app->Init())) {
+            nret = app->Start();
+        }
+    }
+    app->Close();
+    delete app;
+    return nret;
 }

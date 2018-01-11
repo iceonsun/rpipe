@@ -7,11 +7,15 @@
 
 #include <string>
 #include "thirdparty/json11.hpp"
+#include "rpdefs.h"
+#include "plog/Severity.h"
 
 struct Config {
     struct Param {
         Param() = default;
+
         Param(const Param &param) = default;
+
         Param &operator=(const Param &param) = default;
 
         int localListenPort = 0;
@@ -21,8 +25,6 @@ struct Config {
         bool fc = false;
         std::string crypt = "none";    // not used right now
         std::string key = "rpipe123";   // not used right now
-//        PIPE_TYPE type;
-//        int disconnect_sec = 20;    // automatic disconnect if no operations during last period
         int mtu = 1400;             // mtu for nmq
         int sndwnd = 150;         // 1400B * 150
         int rcvwnd = 500;         // 1400B * 2000
@@ -32,32 +34,39 @@ struct Config {
         int backlog = 5;
     };
 
-    enum PIPE_TYPE {
-        UDP,
-        RAW_TCP
-    };
-
     Config() = default;
+
     Config(const Config &conf) = default;
+
     Config &operator=(const Config &conf) = default;
 
-    int parse(bool is_server, int argc, char **argv);
+    std::string log_path = RPIPE_LOG_FILE_PATH;
+    plog::Severity log_level = plog::debug;
 
     bool isServer = false;
     bool isDaemon = true;
     Param param;
 
-    static const int SERVER_DEFAULT_LISTEN_PORT = 10011;
-    static const int CLIENT_DEFAULT_LISTEN_PORT = 10010;
+    static const int SERVER_DEFAULT_LISTEN_PORT = 443;
+    static const int CLIENT_DEFAULT_LISTEN_PORT = 10086;
     static const std::string AES;
     static const int MAX_DUP_ACK_LIMIT = 10;
 
+    int Parse(bool is_server, int argc, char **argv);
+
     json11::Json to_json() const;
+
+    void SetInited(bool init);
+
+    bool Inited();
+
+private:
+    bool mInit = false;
 
 public:
     static void ParseJsonFile(Config &config, const std::string &fName, std::string &err);
 
-    static void ParseJsonString(Config &config, const std::string &content, std::string &err);
+    static void ParseJsonString(Config &c, const std::string &content, std::string &err);
 
 private:
     static void checkAddr(Param &param, bool is_server);

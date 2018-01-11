@@ -11,7 +11,7 @@
 // todo: when target tcp is closed. we should notify peer to close.
 class RServer : public RApp {
 public:
-    int Loop(Config &conf) override;
+    int Loop(uv_loop_t *loop, Config &conf) override;
 
     bool isServer() override { return true; };
 

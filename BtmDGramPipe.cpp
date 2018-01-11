@@ -3,10 +3,7 @@
 //
 
 #include <cassert>
-#include <syslog.h>
-#include <util.h>
 #include "BtmDGramPipe.h"
-#include "thirdparty/debug.h"
 
 
 BtmDGramPipe::BtmDGramPipe(uv_udp_t *dgram) {

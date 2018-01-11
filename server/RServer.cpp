@@ -9,7 +9,7 @@
 
 #include <iostream>
 #include <util.h>
-#include <syslog.h>
+#include <plog/Log.h>
 
 #include "RServer.h"
 #include "../BtmDGramPipe.h"
@@ -17,10 +17,10 @@
 #include "../RstSessionPipe.h"
 #include "../SessionPipe.h"
 #include "../NMQPipe.h"
-#include "../thirdparty/debug.h"
+#include "../util/RPUtil.h"
 
-int RServer::Loop(Config &conf) {
-    mLoop = uv_default_loop();
+int RServer::Loop(uv_loop_t *loop, Config &conf) {
+    mLoop = loop;
     mConf = conf;
 
     uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
@@ -57,14 +57,10 @@ BridgePipe *RServer::CreateBridgePipe(const Config &conf) {
     auto *bridge = new BridgePipe(pipe);
 
     bridge->SetOnErrCb([this](IPipe *pipe, int err) {
-//        uv_timer_stop(&this->mFlushTimer);    // todo don't exit.
         fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
         uv_stop(this->mLoop);
     });
     auto fn = std::bind(&RServer::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
-//    bridge->SetOnCreateNewPipeCb([this](const SessionPipe::KeyType& key, const void *addr) -> SessionPipe * {
-//        return this->OnRawData(key, addr);
-//    });
     bridge->SetOnCreateNewPipeCb(fn);
 
     bridge->Init();
@@ -97,12 +93,12 @@ uv_udp_t *RServer::CreateBtmDgram(const Config &conf) {
     uv_udp_init(mLoop, udp);
     struct sockaddr_in addr = {0};
     uv_ip4_addr(conf.param.localListenIface.c_str(), conf.param.localListenPort, &addr);
-    debug(LOG_ERR, "server, listening on udp: %s:%d", conf.param.localListenIface.c_str(), conf.param.localListenPort);
-    debug(LOG_ERR, "target tcp, %s:%d", conf.param.targetIp.c_str(), conf.param.targetPort);
+    LOGD << "server, listening on udp: " << conf.param.localListenIface << ":" << conf.param.localListenPort;
+    LOGD << "target tcp " << conf.param.targetIp << ":" << conf.param.targetPort;
 
     int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, UV_UDP_REUSEADDR);
     if (nret) {
-        fprintf(stderr, "bind error: %s\n", uv_strerror(nret));
+        LOGE << "uv_bind error: " << uv_strerror(nret);
         free(udp);
         return nullptr;
     }
@@ -117,8 +113,8 @@ ISessionPipe *RServer::OnRawData(const ISessionPipe::KeyType &key, const void *a
         int nret = connect(sock, reinterpret_cast<const sockaddr *>(&mTargetAddr), sizeof(mTargetAddr));
         if (nret) {
             ISessionPipe *sess = new RstSessionPipe(nullptr, key, static_cast<const sockaddr_in *>(addr));
-            fprintf(stderr, "failed to connect %s: %d: %s\n", inet_ntoa(mTargetAddr.sin_addr),
-                    ntohs(mTargetAddr.sin_port), strerror(errno));
+            LOGE << "failed to connect " << RPUtil::Addr2Str((const struct sockaddr *) addr) << ", err: "
+                 << strerror(errno);
             return sess;
         }
         return CreateStreamPipe(sock, key, addr);
@@ -132,22 +128,16 @@ ISessionPipe *RServer::CreateStreamPipe(int sock, const ISessionPipe::KeyType &k
     int n = uv_tcp_open(tcp, sock);
     if (n) {
         free(tcp);
-        debug(LOG_ERR, "uv_tcp_open failed: %s", uv_strerror(n));
+        LOGE << "uv_tcp_open failed: " << uv_strerror(n);
         return nullptr;
     }
-    IPipe *top = new TopStreamPipe((uv_stream_t*)tcp);
+    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp);
 
-//    IRdWriter *rdWriter = new TcpRdWriter(sock, mLoop);
-    // bug here. mConv should match conv in key
     IUINT32 conv = ISessionPipe::ConvFromKey(key);
     IPipe *nmq = new NMQPipe(conv, top);
-//    NMQPipe *nmq = new NMQPipe(conv, rdWriter);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     auto *sess = new SessionPipe(nmq, mLoop, key, addr);
     sess->SetExpireIfNoOps(20);
-
-    debug(LOG_ERR, "sess pipe: %p", sess);
-//    mBrigde->AddPipe(sess);
     return sess;
 }
 

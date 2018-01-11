@@ -3,6 +3,7 @@
 //
 
 #include <cassert>
+#include <cstring>
 #include "RTimer.h"
 #include "../rcommon.h"
 

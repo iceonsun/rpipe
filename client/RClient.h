@@ -14,11 +14,11 @@
 
 class RClient : public RApp {
 public:
-    virtual ~RClient();
+    ~RClient() override = default;
 
     bool isServer() override { return false; };
 
-    int Loop(Config &conf) override;
+    int Loop(uv_loop_t *loop, Config &conf) override;
 
     void Close() override;
 

@@ -9,5 +9,6 @@ int main(int argc, char **argv) {
     fakearg[0] = argv[0];
     fakearg[1] = "-l:10010";
     fakearg[2] = "-t127.0.0.1:20000";
-    return rclient_main(3, fakearg);
+    fakearg[3] = "--log=./test_client.log";
+    return rclient_main(4, fakearg);
 }

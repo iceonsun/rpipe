@@ -4,19 +4,18 @@
 
 #include <iostream>
 #include <fstream>
-#include <syslog.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <plog/Log.h>
 #include "Config.h"
 #include "args.hxx"
 #include "util/FdUtil.h"
-#include "thirdparty/debug.h"
 
 using namespace json11;
 
 const std::string Config::AES = "aes";
 
-int Config::parse(bool is_server, int argc, char **argv) {
+int Config::Parse(bool is_server, int argc, char **argv) {
     this->isServer = is_server;
 
     std::string exampleStr = "Example:\n./rclient";
@@ -28,13 +27,12 @@ int Config::parse(bool is_server, int argc, char **argv) {
 
     args::ArgumentParser parser("rpipe is a network accelerator.", exampleStr);
 
-
     args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
     args::ValueFlag<std::string> localAddr(parser, "", "The local listened IP and port. (default :10010)",
                                            {'l', "localaddr"});
     args::ValueFlag<std::string> targetAddr(parser, "",
                                             "The target IP and port. （default targetIP:10011)",
-                                            {'t', "targetaddr"});
+                                            {'t', "targetaddr"}, args::Options::Required);
     args::ValueFlag<std::string> crypt(parser, "crypt", "Encryption methods. (default aes. Current no cryption works.)",
                                        {"crypt"});
     args::ValueFlag<std::string> key(parser, "key", "Key to encrpt. (default: rpipe123)", {"key"});
@@ -52,9 +50,8 @@ int Config::parse(bool is_server, int argc, char **argv) {
     args::ValueFlag<int> daemon(parser, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
                                 {"daemon"});
     args::ValueFlag<std::string> fjson(parser, "/path/to/json_config", "json config file", {"json"});
-
-
-//    args::Group example2(parser, "server example", svrStr);
+    args::ValueFlag<std::string> flog(parser, "/path/to/log_file", "log file", {"log"});
+    args::Flag verbose(parser, "verbose", "verbose log mode", {'v'});
 
     try {
         parser.ParseCLI(argc, reinterpret_cast<const char *const *>(argv));
@@ -62,7 +59,7 @@ int Config::parse(bool is_server, int argc, char **argv) {
         do {
             // parse json if passed json file
             if (fjson) {
-                debug(LOG_ERR, "json");
+                LOGD << "json file path: " << fjson.Get();
                 std::string err;
                 ParseJsonFile(*this, fjson.Get(), err);
                 if (!err.empty()) {
@@ -149,8 +146,17 @@ int Config::parse(bool is_server, int argc, char **argv) {
             if (daemon) {
                 this->isDaemon = (daemon.Get() != 0);
             }
+
+            if (flog) {
+                this->log_path = flog.Get();
+            }
+
+            if (verbose) {
+                this->log_level = plog::verbose;
+            }
         } while (false);
         checkAddr(param, is_server);
+        mInit = true;
         return 0;
     } catch (args::Help &e) {
         std::cout << parser;
@@ -176,7 +182,9 @@ Json Config::to_json() const {
     return Json::object {
             {"server", isServer},
             {"daemon", isDaemon},
-            {"param",    Json::object {
+            {"verbose", log_level == plog::verbose},
+            {"log", log_path},
+            {"param",  Json::object {
                     {"localListenPort",  param.localListenPort},
                     {"localListenIface", param.localListenIface},
                     {"targetPort",       param.targetPort},
@@ -192,22 +200,32 @@ Json Config::to_json() const {
                     {"dupAckLim",        param.dupAckLim},
                     {"backlog",          param.backlog},
             }},
+
     };
 
 }
 
-void Config::ParseJsonString(Config &config, const std::string &content, std::string &err) {
+void Config::ParseJsonString(Config &c, const std::string &content, std::string &err) {
     Json json = Json::parse(content, err);
     if (!err.empty()) {
         return;
     }
 
     if (json["daemon"].is_number()) {
-        config.isDaemon = (json["daemon"].int_value() != 0);
+        c.isDaemon = (json["daemon"].int_value() != 0);
+    }
+
+    if (json["verbose"].is_bool()) {
+        bool verbose = json["verbose"].bool_value();
+        c.log_level = verbose ? plog::verbose : plog::debug;
+    }
+
+    if (json["log"].is_string()) {
+        c.log_path = json["log"].string_value();
     }
 
     if (json["param"].is_object()) {
-        Param &p = config.param;
+        Param &p = c.param;
         Json::object o = json["param"].object_items();
         if (o["localListenPort"].is_number()) {
             p.localListenPort = o["localListenPort"].int_value();
@@ -306,4 +324,12 @@ void Config::checkAddr(Config::Param &param, bool is_server) {
     if (!err.empty()) {
         throw args::Error(err);
     }
+}
+
+void Config::SetInited(bool init) {
+    mInit = init;
+}
+
+bool Config::Inited() {
+    return mInit;
 }

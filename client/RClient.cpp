@@ -7,20 +7,16 @@
 #include <nmq.h>
 #include <sstream>
 #include <iostream>
-#include <syslog.h>
+#include <plog/Log.h>
 #include "RClient.h"
 #include "../TopStreamPipe.h"
 #include "../SessionPipe.h"
 #include "../RstSessionPipe.h"
 #include "../NMQPipe.h"
-#include "../thirdparty/debug.h"
 
 
-RClient::~RClient() {
-}
-
-int RClient::Loop(Config &conf) {
-    mLoop = uv_default_loop();
+int RClient::Loop(uv_loop_t* loop, Config &conf) {
+    mLoop = loop;
     int nret = uv_ip4_addr(conf.param.targetIp.c_str(), conf.param.targetPort, &mTargetAddr);
     if (nret != 0) {
         fprintf(stderr, "wrong conf: %s\n", uv_strerror(nret));
@@ -85,21 +81,20 @@ uv_handle_t *RClient::InitTcpListen(const Config &conf) {
     if (0 == nret) {
         nret = uv_listen(reinterpret_cast<uv_stream_t *>(tcp), conf.param.backlog, svr_conn_cb);
         if (nret) {
-            debug(LOG_ERR, "failed to listen tcp: %s\n", uv_strerror(nret));
+            LOGE << "failed to listen tcp: " << uv_strerror(nret);
             uv_close(reinterpret_cast<uv_handle_t *>(tcp), close_cb);
         }
     } else {
-        debug(LOG_ERR, "failed to bind %s:%d, error: %s\n", conf.param.localListenIface.c_str(), conf.param.localListenPort,
-              uv_strerror(nret));
+        LOGE << "failed to bind " << conf.param.localListenIface << ":" << conf.param.localListenPort << ", error: "
+             << uv_strerror(nret);
         free(tcp);
     }
 
     if (nret) {
-        debug(LOG_ERR, "failed to start, err: %s\n", uv_strerror(nret));
         tcp = nullptr;
     } else {
-        debug(LOG_ERR, "client, listening on tcp %s:%d", conf.param.localListenIface.c_str(), conf.param.localListenPort);
-        debug(LOG_ERR, "target udp %s:%d", conf.param.targetIp.c_str(), conf.param.targetPort);
+        LOGD << "client, listening on tcp " << conf.param.localListenIface << ":" << conf.param.localListenPort;
+        LOGD << "target udp " << conf.param.targetIp << ":" << conf.param.targetPort;
     }
 
     return reinterpret_cast<uv_handle_t *>(tcp);
@@ -111,9 +106,9 @@ void RClient::svr_conn_cb(uv_stream_t *server, int status) {
 }
 
 void RClient::newConn(uv_stream_t *server, int status) {
-    debug(LOG_ERR, "new connection. status: %d\n", status);
+    LOGV << "new connection. status: " << status;
     if (status) {
-        debug(LOG_ERR, "new connection error. status: %d, err: %s\n", status, uv_strerror(status));
+        LOGE << "new connection error: " << uv_strerror(status);
         return;
     }
 

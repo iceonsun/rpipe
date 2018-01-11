@@ -13,8 +13,8 @@ set(SOURCE_FILES
     Config.cpp BridgePipe.cpp SessionPipe.cpp SessionPipe.h ITopContainerPipe.cpp
     RstSessionPipe.cpp
     ISessionPipe.cpp NMQPipe.cpp
-    thirdparty/debug.c thirdparty/json11.cpp
-    util/FdUtil.cpp util/RTimer.cpp
+    thirdparty/json11.cpp
+    util/FdUtil.cpp util/RTimer.cpp util/RPUtil.cpp util/ProcUtil.cpp
     server/rserver_main.cpp server/RServer.cpp
     client/rclient_main.cpp client/RClient.cpp )
 

@@ -11,7 +11,7 @@
 
 class TopStreamPipe : public IPipe {
 public:
-    TopStreamPipe(uv_stream_t *stream);
+    explicit TopStreamPipe(uv_stream_t *stream);
 
     int Init() override;
 

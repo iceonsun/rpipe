@@ -24,7 +24,7 @@ public:
     // todo: init & start
     virtual int Init() { mInited = true; };
 
-    virtual void Start() { assert(mInited == true); }
+    virtual void Start() { assert(mInited); }
 
     // buf.base within a pipe are reused. base from different pipes are copied.
     // so,  pipe should be responsable to free mem allocated by itself

@@ -5,15 +5,25 @@
 #ifndef RPIPE_RAPP_H
 #define RPIPE_RAPP_H
 
-
+#include "uv.h"
 #include "Config.h"
 #include "BridgePipe.h"
 
+namespace plog {
+    class IAppender;
+}
+
 class RApp {
 public:
-    int Main(int argc, char **argv);
+    virtual ~RApp() = default;
 
-    virtual int Loop(Config &conf) = 0;
+    virtual int Parse(int argc, char **argv);
+
+    virtual int Init();
+
+    virtual int Start();
+
+    virtual int Loop(uv_loop_t *loop, Config &conf) = 0;
 
     virtual bool isServer() = 0;
 
@@ -32,6 +42,15 @@ public:
 protected:
     static void flush_cb(uv_timer_t *handle);
 
+private:
+    int initLog(const Config &conf);
+    int doInit();
+    int makeDaemon();
+private:
+    plog::IAppender *mFileAppender = nullptr;
+    plog::IAppender *mConsoleAppender = nullptr;
+    Config mConf;
+    uv_loop_t *mLoop = nullptr;
 };
 
 

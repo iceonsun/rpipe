@@ -3,9 +3,7 @@
 //
 
 #include <cassert>
-#include <syslog.h>
 #include "ITopContainerPipe.h"
-#include "thirdparty/debug.h"
 
 using namespace std::placeholders;
 
@@ -39,7 +37,6 @@ int ITopContainerPipe::Close() {
         SetOnRecvCb(nullptr);
         mTopPipe->SetOnErrCb(nullptr);
 
-        debug(LOG_ERR, "%s, deleting toppipe: %p", __FUNCTION__, mTopPipe);
         mTopPipe->Close();
 
         delete mTopPipe;
