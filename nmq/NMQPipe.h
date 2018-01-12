@@ -15,6 +15,8 @@ public:
 
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
+    void Flush(IUINT32 curr) override;
+
     IINT32 nmqOutput(const char *data, const int len, struct nmq_s *nmq) override;
 
 protected:

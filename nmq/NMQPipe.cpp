@@ -68,7 +68,8 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
 
 int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
     if (nread < 0) {
-        Output(nread, buf);
+        nmq_shutdown_send(mNmq);
+//        Output(nread, buf);
     } else if (nread > 0) {
         ssize_t nleft = nread;
         while (nleft > 0) {
@@ -96,4 +97,9 @@ IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
     }
 
     return nret;
+}
+
+void NMQPipe::Flush(IUINT32 curr) {
+    INMQPipe::Flush(curr);
+    nmqRecv(mNmq);  // necessary!!
 }

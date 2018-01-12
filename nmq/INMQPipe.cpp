@@ -35,7 +35,6 @@ int INMQPipe::Close() {
 void INMQPipe::Flush(IUINT32 curr) {
     ITopContainerPipe::Flush(curr);
     nmq_flush(mNmq, curr);
-//    nmqRecv(mNmq);
 }
 
 void INMQPipe::SetWndSize(IUINT32 sndwnd, IUINT32 rcvwnd) {

@@ -14,7 +14,7 @@ std::string RPUtil::Addr2Str(const struct sockaddr *addr) {
         struct sockaddr_in *addr4 = (struct sockaddr_in *) addr;
         std::string s = inet_ntoa(addr4->sin_addr);
         s += ":";
-        s += htons(addr4->sin_port);
+        s += std::to_string(ntohs(addr4->sin_port));
         return s;
     } else if (addr->sa_family == AF_UNIX) {
         struct sockaddr_un *un = (struct sockaddr_un *) addr;
