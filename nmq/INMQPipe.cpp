@@ -24,8 +24,8 @@ int INMQPipe::Close() {
 
     if (mNmq) {
         nmq_stat_t *st = &mNmq->stat;
-        LOGD << "nmq_stat, rtt: " << st->nrtt_tot * 1.0 / st->nrtt << ", oversend ratio: "
-             << st->bytes_send_tot * 1.0 / st->bytes_send;
+        LOGD << "sndwnd: " << mNmq->MAX_SND_BUF_NUM << ", rcvwnd: " << mNmq->MAX_RCV_BUF_NUM << ", nmq_stat, rtt: "
+             << st->nrtt_tot * 1.0 / st->nrtt << "ms, oversend ratio: " << st->bytes_send_tot * 1.0 / st->bytes_send;
         nmq_destroy(mNmq);
         mNmq = nullptr;
     }
