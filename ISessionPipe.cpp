@@ -2,14 +2,12 @@
 // Created on 12/8/17.
 //
 
-#include "SessionPipe.h"
-#include <string>
+#include "ISessionPipe.h"
 #include <sstream>
 #include <cassert>
 #include <cstring>
 
 #include <enc.h>
-#include "ISessionPipe.h"
 
 ISessionPipe::ISessionPipe(IPipe *topPipe, const KeyType &key, const sockaddr_in *target) : ITopContainerPipe(topPipe) {
     if (target) {

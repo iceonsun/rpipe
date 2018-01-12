@@ -3,6 +3,7 @@
 //
 
 #include <cassert>
+#include <plog/Log.h>
 #include "BtmDGramPipe.h"
 
 
@@ -94,9 +95,9 @@ int BtmDGramPipe::Send(ssize_t nread, const rbuf_t *buf) {
 
 
 void BtmDGramPipe::SetOutputCb(const PipeCb &cb) {
-    fprintf(stderr, "cannot set output of a btm terminal.\n");
+    LOGE << "cannot set output of a btm terminal.";
 }
 
 int BtmDGramPipe::Input(ssize_t nread, const rbuf_t *buf) {
-    fprintf(stderr, "cannot call input on a btm stream pipe\n");
+    LOGE <<  "cannot call input on a btm stream pipe";
 }

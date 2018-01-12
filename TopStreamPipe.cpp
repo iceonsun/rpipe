@@ -3,16 +3,19 @@
 //
 
 #include <cassert>
-#include <nmq.h>
+#include <cstring>
+#include <plog/Log.h>
 #include "TopStreamPipe.h"
 
-TopStreamPipe::TopStreamPipe(uv_stream_t *stream) {
+TopStreamPipe::TopStreamPipe(uv_stream_t *stream, IUINT32 mss) {
     mTopStream = stream;
+    mMSS = mss;
 }
 
 int TopStreamPipe::Init() {
     int n = uv_read_start(mTopStream, alloc_buf, echo_read);
     mTopStream->data = this;
+    assert(mMSS > 0);
     return n;
 }
 
@@ -61,8 +64,8 @@ void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t
         ssize_t nleft = nread;
         while (nleft > 0) {
             ssize_t n = nleft;
-            if (n > NMQ_MSS_DEF) {
-                n = NMQ_MSS_DEF;
+            if (n > pipe->mMSS) {
+                n = pipe->mMSS;
             }
             tmp.base = buf->base + (nread - nleft);
             nleft -= n;
@@ -87,11 +90,11 @@ void TopStreamPipe::write_cb(uv_write_t *uvreq, int status) {
 }
 
 int TopStreamPipe::Send(ssize_t nread, const rbuf_t *buf) {
-    fprintf(stderr, "cannot call send on a top stream pipe\n");
+    LOGE << "cannot call send on a top stream pipe";
     return -1;
 }
 
 int TopStreamPipe::OnRecv(ssize_t nread, const rbuf_t *buf) {
-    fprintf(stderr, "cannot call onrecv on a top stream pipe\n");
+    LOGE << "cannot call onrecv on a top stream pipe";
     return -1;
 }

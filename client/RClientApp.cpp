@@ -5,8 +5,6 @@
 #include <uv.h>
 #include <cstdlib>
 #include <nmq.h>
-#include <sstream>
-#include <iostream>
 #include <plog/Log.h>
 
 #include "RClientApp.h"
@@ -45,7 +43,7 @@ BridgePipe *RClientApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_
     pipe->SetOnCreateNewPipeCb(fn);    // explicitly set cb. ignore unknown data
 
     pipe->SetOnErrCb([loop](IPipe *pipe, int err) {
-        fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
+        LOGE << "bridge pipe error: "<< err << ". Exit!";
         uv_stop(loop);
     });
     return pipe;
@@ -106,8 +104,9 @@ void RClientApp::newConn(uv_stream_t *server, int status) {
 
 void RClientApp::onNewClient(uv_stream_t *client) {
     mConv++;
-    IPipe *top = new TopStreamPipe(client);
-    auto nmq = NewNMQPipeFromConf(mConv, GetConfig(), top);
+    auto &conf = GetConfig();
+    IPipe *top = new TopStreamPipe(client, conf.param.mtu);
+    auto nmq = NewNMQPipeFromConf(mConv, conf, top);
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, GetTarget());
     sess->SetExpireIfNoOps(20);
 

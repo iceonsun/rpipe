@@ -2,12 +2,8 @@
 // Created on 11/17/17.
 //
 
-#include <cstdio>
 #include <cassert>
 
-#include <sstream>
-
-#include <iostream>
 #include <util.h>
 #include <plog/Log.h>
 
@@ -31,7 +27,7 @@ BridgePipe *RServerApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_
     auto *bridge = new BridgePipe(btmPipe);
 
     bridge->SetOnErrCb([loop](IPipe *pipe, int err) {
-        fprintf(stderr, "bridge pipe error: %d. Exit!\n", err);
+        LOGE << "bridge pipe error: "<< err << ". Exit!";
         uv_stop(loop);
     });
     auto fn = std::bind(&RServerApp::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
@@ -84,10 +80,11 @@ ISessionPipe *RServerApp::CreateStreamPipe(int sock, const ISessionPipe::KeyType
         LOGE << "uv_tcp_open failed: " << uv_strerror(n);
         return nullptr;
     }
-    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp);
+    auto &conf = GetConfig();
+    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, conf.param.mtu);
 
     IUINT32 conv = ISessionPipe::ConvFromKey(key);
-    auto nmq = NewNMQPipeFromConf(conv, GetConfig(), top);
+    auto nmq = NewNMQPipeFromConf(conv, conf, top);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     auto *sess = new SessionPipe(nmq, loop, key, addr);
     sess->SetExpireIfNoOps(20);

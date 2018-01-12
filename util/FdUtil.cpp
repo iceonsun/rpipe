@@ -4,7 +4,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <cstdio>
 
 #include <unistd.h>
 #include <sys/socket.h>

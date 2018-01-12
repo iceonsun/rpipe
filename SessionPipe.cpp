@@ -3,7 +3,6 @@
 //
 
 #include <cassert>
-#include <sstream>
 #include <nmq.h>
 #include <plog/Log.h>
 #include "SessionPipe.h"
