@@ -3,6 +3,7 @@
 //
 
 #include <nmq.h>
+#include <plog/Log.h>
 #include "INMQPipe.h"
 
 INMQPipe::INMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
@@ -22,6 +23,9 @@ int INMQPipe::Close() {
     ITopContainerPipe::Close();
 
     if (mNmq) {
+        nmq_stat_t *st = &mNmq->stat;
+        LOGD << "nmq_stat, rtt: " << st->nrtt_tot * 1.0 / st->nrtt << ", oversend ratio: "
+             << st->bytes_send_tot * 1.0 / st->bytes_send;
         nmq_destroy(mNmq);
         mNmq = nullptr;
     }

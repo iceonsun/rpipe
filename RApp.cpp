@@ -70,6 +70,7 @@ int RApp::doInit() {
     if (nret) {
         return nret;
     }
+    LOGV << "conf: " << mConf.to_json().dump();
     nret = uv_ip4_addr(mConf.param.targetIp.c_str(), mConf.param.targetPort, &mTargetAddr);
     if (nret) {
         return nret;
