@@ -70,7 +70,11 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
         }
         nret = sess->Input(nread, buf);
         if (nret < 0) {
-            LOGE_IF(nret != UV_EOF) << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+            if (nret == UV_EOF) {
+                LOGV <<  "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+            } else {
+                LOGE  << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+            }
             RemovePipe(sess);
         }
     } else if (nread < 0) {
@@ -175,13 +179,17 @@ void BridgePipe::cleanErrPipes() {
 
 
 void BridgePipe::OnTopPipeError(ISessionPipe *pipe, int err) {
-    LOGE_IF(err != UV_EOF) << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
+    if (err == UV_EOF) {
+        LOGV << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
+    } else {
+        LOGE << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
+    }
     RemovePipe(pipe);
 }
 
 void BridgePipe::OnBtmPipeError(IPipe *pipe, int err) {
     assert(pipe == mBtmPipe);   // typically sendto will not fail
-    LOGE_IF(err != UV_EOF) << "btm pipe error " << err << ": " << uv_strerror(err);
+    LOGE << "btm pipe error " << err << ": " << uv_strerror(err);
     OnError(this, err);
 }
 

@@ -11,18 +11,30 @@ link_directories(../sockNM/cmake-build-debug/)
 set(SOURCE_FILES
     IPipe.cpp rcommon.c TopStreamPipe.cpp BtmDGramPipe.cpp RApp.cpp
     Config.cpp BridgePipe.cpp SessionPipe.cpp SessionPipe.h ITopContainerPipe.cpp
-    RstSessionPipe.cpp
-    ISessionPipe.cpp NMQPipe.cpp
+    RstSessionPipe.cpp ISessionPipe.cpp
+    nmq/NMQPipe.cpp nmq/INMQPipe.cpp
     thirdparty/json11.cpp
     util/FdUtil.cpp util/RTimer.cpp util/RPUtil.cpp util/ProcUtil.cpp
-    server/rserver_main.cpp server/RServer.cpp
-    client/rclient_main.cpp client/RClient.cpp )
+    )
 
-add_executable(rclient ${SOURCE_FILES}  client/main.cpp)
-add_executable(rserver ${SOURCE_FILES} server/main.cpp)
+set(SVR_SOURCE_FILES ${SOURCE_FILES} server/rserver_main.cpp server/RServerApp.cpp)
+set(CLI_SOURCE_FILES ${SOURCE_FILES} client/rclient_main.cpp client/RClientApp.cpp)
 
-add_executable(test_client ${SOURCE_FILES} test/test_client.cpp)
-add_executable(test_server ${SOURCE_FILES} test/test_server.cpp)
+add_executable(rclient ${CLI_SOURCE_FILES}  client/main.cpp)
+add_executable(rserver ${SVR_SOURCE_FILES} server/main.cpp)
+set_target_properties(
+        rserver
+        PROPERTIES
+        COMPILE_DEFINITIONS RPIPE_IS_SERVER
+)
+
+add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
+add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
+set_target_properties(
+        test_server
+        PROPERTIES
+        COMPILE_DEFINITIONS RPIPE_IS_SERVER
+)
 
 add_executable(echo_client test/tcp_echo_client.cpp rcommon.c)
 add_executable(echo_server test/test_tcp_echo_server.cpp rcommon.c)

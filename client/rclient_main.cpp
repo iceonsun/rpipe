@@ -3,10 +3,10 @@
 //
 
 #include "../RApp.h"
-#include "RClient.h"
+#include "RClientApp.h"
 
 int rclient_main(int argc, char **argv) {
-    RApp *app = new RClient();
+    RApp *app = new RClientApp();
     int nret = app->Parse(argc, argv);
     if (!nret) {
         if (!(nret = app->Init())) {

@@ -6,49 +6,7 @@
 #include <plog/Log.h>
 #include "NMQPipe.h"
 
-NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
-    mConv = conv;
-}
-
-int NMQPipe::Init() {
-    ITopContainerPipe::Init();
-    mNmq = nmq_new(mConv, this);
-//    nmq_set_read_cb(mNmq, read_cb);
-    nmq_set_output_cb(mNmq, nmqOutputCb);
-    nmq_start(mNmq);
-
-    return 0;
-}
-
-int NMQPipe::Close() {
-    ITopContainerPipe::Close();
-
-    if (mNmq) {
-        nmq_destroy(mNmq);
-        mNmq = nullptr;
-    }
-    return 0;
-}
-
-IINT32 NMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg) {
-    int nret = -1;
-    auto pipe = static_cast<NMQPipe *>(nmq->arg);
-    if (len > 0) {
-        rbuf_t buf = {0};
-        char tbuf[len] = {0};
-        memcpy(tbuf, data, len);
-        buf.base = tbuf;
-        buf.len = len;
-        nret = pipe->Output(len, &buf);
-    } else if (len == NMQ_SEND_EOF) {
-        pipe->nmqSendDone();
-        nret = 0;
-    } else {
-        LOGE << "unrecognized len: " << len;
-    }
-
-    return nret;
-}
+NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {}
 
 void NMQPipe::nmqRecvDone() {
 //    nmqRecv(mNmq);  // stack overflows
@@ -88,12 +46,6 @@ int NMQPipe::nmqRecv(struct nmq_s *nmq) {
     return nret < 0 ? nret : tot;
 }
 
-void NMQPipe::Flush(IUINT32 curr) {
-    ITopContainerPipe::Flush(curr);
-    nmq_flush(mNmq, curr);
-    nmqRecv(mNmq);
-}
-
 int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
     assert(nread > 0);  // it's caller's responsibility to check nread
 
@@ -125,5 +77,23 @@ int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
         }
     }
     return nread;
+}
 
+IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
+    int nret = -1;
+    if (len > 0) {
+        rbuf_t buf = {0};
+        char tbuf[len] = {0};
+        memcpy(tbuf, data, len);
+        buf.base = tbuf;
+        buf.len = len;
+        nret = Output(len, &buf);
+    } else if (len == NMQ_SEND_EOF) {
+        nmqSendDone();
+        nret = 0;
+    } else {
+        LOGE << "unrecognized len: " << len;
+    }
+
+    return nret;
 }

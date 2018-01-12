@@ -87,7 +87,6 @@ int SessionPipe::Send(ssize_t nread, const rbuf_t *buf) {
         }
         return nret;
     } else if (nread < 0) {
-        LOGV_IF(nread != UV_EOF) << "err state: " << nread;
         if (nread == UV_EOF) {
             onSelfEof();
             return nread;

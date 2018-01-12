@@ -25,9 +25,14 @@ struct Config {
         bool fc = false;
         std::string crypt = "none";    // not used right now
         std::string key = "rpipe123";   // not used right now
-        int mtu = 1400;             // mtu for nmq
-        int sndwnd = 150;         // 1400B * 150
+        int mtu = 1350;             // mtu for nmq
+#ifdef RPIPE_IS_SERVER
+        int sndwnd = 500;         // 1400B * 500
         int rcvwnd = 500;         // 1400B * 2000
+#else
+        int sndwnd = 150;         // 1400B * 100
+        int rcvwnd = 500;         // 1400B * 2000
+#endif
         int interval = 20;  //ms
         int tolerance = 2;  // number of segments to cause retransmit. default is 2
         int dupAckLim = 3;  // number of dup acks to think a segment lost

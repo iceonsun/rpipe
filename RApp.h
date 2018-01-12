@@ -8,6 +8,7 @@
 #include "uv.h"
 #include "Config.h"
 #include "BridgePipe.h"
+#include "nmq/INMQPipe.h"
 
 namespace plog {
     class IAppender;
@@ -21,36 +22,46 @@ public:
 
     virtual int Init();
 
-    virtual int Start();
-
-    virtual int Loop(uv_loop_t *loop, Config &conf) = 0;
+    int Start();
 
     virtual bool isServer() = 0;
 
-    virtual void Close() = 0;
+    virtual void Close();
 
-    virtual void Flush() = 0;
+    virtual void Flush();
 
-//    virtual uv_handle_t * CreateListenHandle(const Config &conf) = 0;
+    virtual BridgePipe *CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_loop_t *loop) = 0;
 
-    virtual BridgePipe * CreateBridgePipe(const Config &conf) = 0;
+    virtual IPipe *CreateBtmPipe(const Config &conf, uv_loop_t *loop) = 0;
 
-    virtual IPipe *CreateBtmPipe(const Config &conf) = 0;
+    const Config &GetConfig();
 
-    const static int RBUF_SIZE = 1450;
+    uv_loop_t *GetLoop();
 
-protected:
+    BridgePipe *GetBridgePipe();
+
+    const sockaddr_in *GetTarget();
+
+    static INMQPipe * NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top);
+
+private:
     static void flush_cb(uv_timer_t *handle);
 
 private:
     int initLog(const Config &conf);
+
     int doInit();
+
     int makeDaemon();
+
 private:
+    BridgePipe *mBridge = nullptr;
+    uv_timer_t *mFlushTimer = nullptr;
     plog::IAppender *mFileAppender = nullptr;
     plog::IAppender *mConsoleAppender = nullptr;
     Config mConf;
     uv_loop_t *mLoop = nullptr;
+    struct sockaddr_in mTargetAddr = {0};
 };
 
 
