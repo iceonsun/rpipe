@@ -36,6 +36,8 @@ public:
 
     void SetFcAlpha(float alpha);
 
+    void SetSteady(bool steady);
+
     virtual IINT32 nmqOutput(const char *data, const int len, struct nmq_s *nmq) = 0;
 
 private:

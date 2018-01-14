@@ -35,6 +35,7 @@ int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
         auto req = (rudp_send_t *) malloc(sizeof(rudp_send_t));
         memset(req, 0, sizeof(rudp_send_t));
 
+        LOGV << "send " << nread << " bytes to server";
         req->udp_send.data = this;
         req->buf = uv_buf_init(buf->base, nread);   // base and data are malloced by self
         req->addr = static_cast<sockaddr *>(buf->data);

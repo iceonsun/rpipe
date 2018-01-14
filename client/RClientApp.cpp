@@ -11,6 +11,8 @@
 #include "../TopStreamPipe.h"
 #include "../SessionPipe.h"
 #include "../RstSessionPipe.h"
+#include "../rcommon.h"
+#include "../bio/UdpBtmPipe.h"
 
 int RClientApp::Init() {
     int nret = RApp::Init();
@@ -36,6 +38,11 @@ IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
 
     return new BtmDGramPipe(dgram);
 }
+
+//IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
+//    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//    return new UdpBtmPipe(sock, loop);
+//}
 
 BridgePipe *RClientApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_loop_t *loop) {
     auto *pipe = new BridgePipe(btmPipe);
@@ -105,8 +112,9 @@ void RClientApp::newConn(uv_stream_t *server, int status) {
 void RClientApp::onNewClient(uv_stream_t *client) {
     mConv++;
     auto &conf = GetConfig();
-    IPipe *top = new TopStreamPipe(client, conf.param.mtu);
+    IPipe *top = new TopStreamPipe(client, conf.param.mtu - SEG_HEAD_SIZE);
     auto nmq = NewNMQPipeFromConf(mConv, conf, top);
+    nmq->SetSteady(false);
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, GetTarget());
     sess->SetExpireIfNoOps(20);
 

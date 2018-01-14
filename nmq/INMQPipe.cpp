@@ -24,8 +24,9 @@ int INMQPipe::Close() {
 
     if (mNmq) {
         nmq_stat_t *st = &mNmq->stat;
-        LOGD << "sndwnd: " << mNmq->MAX_SND_BUF_NUM << ", rcvwnd: " << mNmq->MAX_RCV_BUF_NUM << ", nmq_stat, rtt: "
-             << st->nrtt_tot * 1.0 / st->nrtt << "ms, oversend ratio: " << st->bytes_send_tot * 1.0 / st->bytes_send;
+        LOGV << "fc: " << (int)mNmq->fc_on << ", sndwnd: " << mNmq->MAX_SND_BUF_NUM << ", rcvwnd: " << mNmq->MAX_RCV_BUF_NUM << ", interval: " << mNmq->flush_interval << ", bytes_per_flush: " << mNmq->BYTES_PER_FLUSH;
+        LOGV << "nmq_stat, rtt: " << st->nrtt_tot * 1.0 / st->nrtt << "ms, oversend ratio: "
+             << st->bytes_send_tot * 1.0 / st->bytes_send;
         nmq_destroy(mNmq);
         mNmq = nullptr;
     }
@@ -51,7 +52,7 @@ void INMQPipe::SetFlowControl(bool fc) {
 }
 
 void INMQPipe::SetMSS(IUINT32 MSS) {
-    nmq_set_mss(mNmq, MSS);
+    nmq_set_nmq_mtu(mNmq, MSS);
 }
 
 void INMQPipe::SetInterval(IUINT16 interval) {
@@ -72,4 +73,8 @@ void INMQPipe::SetSegPoolCap(IUINT8 CAP) {
 
 void INMQPipe::SetFcAlpha(float alpha) {
     nmq_set_fc_alpha(mNmq, alpha);
+}
+
+void INMQPipe::SetSteady(bool steady) {
+    nmq_set_steady(mNmq, static_cast<IUINT8>(steady));
 }

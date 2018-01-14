@@ -6,6 +6,7 @@
 
 #include <util.h>
 #include <plog/Log.h>
+#include <nmq.h>
 
 #include "RServerApp.h"
 #include "../BtmDGramPipe.h"
@@ -13,6 +14,7 @@
 #include "../RstSessionPipe.h"
 #include "../SessionPipe.h"
 #include "../util/RPUtil.h"
+#include "../bio/UdpBtmPipe.h"
 
 IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
     uv_udp_t *udp = createBtmDgram(conf, loop);
@@ -22,6 +24,18 @@ IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
     }
     return nullptr;
 }
+
+//IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
+//    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+//    struct sockaddr_in addr;
+//    uv_ip4_addr(conf.param.localListenIface.c_str(), conf.param.localListenPort, &addr);
+//    int n = bind(sock, reinterpret_cast<const sockaddr *>(&addr), sizeof(addr));
+//    if (n) {
+//        LOGE << "bind failed " << strerror(errno);
+//        assert(n == 0);
+//    }
+//    return new UdpBtmPipe(sock, loop);
+//}
 
 BridgePipe *RServerApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_loop_t *loop) {
     auto *bridge = new BridgePipe(btmPipe);
@@ -81,7 +95,7 @@ ISessionPipe *RServerApp::CreateStreamPipe(int sock, const ISessionPipe::KeyType
         return nullptr;
     }
     auto &conf = GetConfig();
-    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, conf.param.mtu);
+    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, conf.param.mtu - SEG_HEAD_SIZE);
 
     IUINT32 conv = ISessionPipe::ConvFromKey(key);
     auto nmq = NewNMQPipeFromConf(conv, conf, top);
