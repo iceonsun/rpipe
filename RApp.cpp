@@ -76,9 +76,9 @@ int RApp::doInit() {
         return nret;
     }
 
-//    if (makeDaemon()) {
-//        return -1;
-//    }
+    if (makeDaemon()) {
+        return -1;
+    }
 
     IPipe *btmPipe = CreateBtmPipe(mConf, mLoop);
     if (!btmPipe) {
@@ -97,8 +97,14 @@ int RApp::doInit() {
 }
 
 int RApp::makeDaemon() {
-    ProcUtil::MakeDaemon(mConf.isDaemon); // todo: add daemon test later
-    if (mConf.isDaemon) {   // todo: if run in daemon, poll will fail if use default loop (on mac, it's uv__io_check_fd fails). why?
+    int n = ProcUtil::MakeDaemon(mConf.isDaemon); // todo: add daemon test later
+    if (n < 0) {
+        LOGE << "make process daemon failed: " << strerror(errno);
+        return n;
+    }
+    // todo: if run in daemon, poll will fail if use default loop (on mac, it's uv__io_check_fd fails). why?
+    if (mConf.isDaemon) {
+        LOGI << "Run in background. pid: " << getpid(); // print to file.
         mLoop = static_cast<uv_loop_t *>(malloc(sizeof(uv_loop_t)));
         memset(mLoop, 0, sizeof(uv_loop_t));
         uv_loop_init(mLoop);
@@ -133,11 +139,11 @@ BridgePipe *RApp::GetBridgePipe() {
     return mBridge;
 }
 
-const sockaddr_in * RApp::GetTarget() {
+const sockaddr_in *RApp::GetTarget() {
     return &mTargetAddr;
 }
 
-INMQPipe * RApp::NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top) {
+INMQPipe *RApp::NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top) {
     auto nmq = new NMQPipe(conv, top);
     nmq->SetMSS(conf.param.mtu);
     nmq->SetWndSize(conf.param.sndwnd, conf.param.rcvwnd);

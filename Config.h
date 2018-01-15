@@ -30,7 +30,7 @@ struct Config {
         int sndwnd = 1000;         // 1400B * 1000
         int rcvwnd = 500;         // 1400B * 2000
 #else
-        int sndwnd = 150;         // 1400B * 100
+        int sndwnd = 500;         // 1400B * 500
         int rcvwnd = 1000;         // 1400B * 1000
 #endif
         int interval = 20;  //ms
