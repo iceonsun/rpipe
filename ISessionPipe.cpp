@@ -7,7 +7,7 @@
 #include <cassert>
 #include <cstring>
 
-#include <enc.h>
+#include <nmq/enc.h>
 
 ISessionPipe::ISessionPipe(IPipe *topPipe, const KeyType &key, const sockaddr_in *target) : ITopContainerPipe(topPipe) {
     if (target) {

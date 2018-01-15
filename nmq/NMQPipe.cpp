@@ -2,7 +2,7 @@
 // Created on 1/8/18.
 //
 
-#include <nmq.h>
+#include <nmq/nmq.h>
 #include <plog/Log.h>
 #include "NMQPipe.h"
 

@@ -3,7 +3,7 @@
 //
 
 #include <cassert>
-#include <nmq.h>
+#include <nmq/nmq.h>
 #include <plog/Log.h>
 #include "BridgePipe.h"
 

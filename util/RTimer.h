@@ -8,7 +8,7 @@
 
 #include <functional>
 #include <uv.h>
-#include "ktype.h"
+#include "nmq/ktype.h"
 
 class RTimer {
 public:

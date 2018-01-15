@@ -4,7 +4,7 @@
 
 #include <uv.h>
 #include <cstdlib>
-#include <nmq.h>
+#include <nmq/nmq.h>
 #include <plog/Log.h>
 
 #include "RClientApp.h"

@@ -4,9 +4,9 @@
 
 #include <cassert>
 
-#include <util.h>
+#include <nmq/util.h>
 #include <plog/Log.h>
-#include <nmq.h>
+#include <nmq/nmq.h>
 
 #include "RServerApp.h"
 #include "../BtmDGramPipe.h"
