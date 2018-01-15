@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.5)
 project(RPipe)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -33,6 +33,7 @@ set_target_properties(
         PROPERTIES
         COMPILE_DEFINITIONS RPIPE_IS_SERVER
 )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
 
 add_executable(echo_client test/tcp_echo_client.cpp rcommon.c)
 add_executable(echo_server test/test_tcp_echo_server.cpp rcommon.c)

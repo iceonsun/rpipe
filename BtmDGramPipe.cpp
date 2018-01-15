@@ -39,10 +39,10 @@ int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
 
         req->udp_send.data = this;
         req->buf = uv_buf_init(buf->base, nread);   // base and data are malloced by self
-        req->addr = static_cast<sockaddr *>(buf->data);
+        req->addr = static_cast<struct sockaddr *>(buf->data);
 
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(req), mDgram, &req->buf, 1,
-                    req->addr, send_cb);
+                    (const struct sockaddr*)req->addr, send_cb);
     }
     return 0;
 }

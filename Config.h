@@ -27,11 +27,11 @@ struct Config {
         std::string key = "rpipe123";   // not used right now
         int mtu = 1400;             // mtu for nmq
 #ifdef RPIPE_IS_SERVER
-        int sndwnd = 500;         // 1400B * 500
+        int sndwnd = 1000;         // 1400B * 1000
         int rcvwnd = 500;         // 1400B * 2000
 #else
         int sndwnd = 150;         // 1400B * 100
-        int rcvwnd = 500;         // 1400B * 2000
+        int rcvwnd = 1000;         // 1400B * 1000
 #endif
         int interval = 20;  //ms
         int tolerance = 2;  // number of segments to cause retransmit. default is 2

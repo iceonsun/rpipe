@@ -84,7 +84,7 @@ void TopStreamPipe::write_cb(uv_write_t *uvreq, int status) {
     req->write.data = nullptr;
 
     free_rwrite_req(req);
-    if (status) {
+    if (status < 0 && UV_ECANCELED != status) {
         pipe->OnError(pipe, status);
     }
 }
