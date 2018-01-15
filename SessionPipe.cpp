@@ -59,11 +59,9 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
             onPeerRst();
         } else {
             rbuf_t rbuf = {0};
-            char tmp[nread - headLen] = {0};
-            memcpy(tmp, p, nread - headLen);
-            rbuf.base = tmp;
-//            rbuf.base = const_cast<char *>(p);    // todo: uncomment
+            rbuf.base = const_cast<char *>(p);
             rbuf.data = nullptr;
+            rbuf.len = nread - headLen;
             if (nread == headLen) {
                 return 0;   // 0 bytes. do nothing.
             }

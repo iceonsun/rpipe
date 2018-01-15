@@ -2,9 +2,11 @@
 // Created on 11/13/17.
 //
 
+#include <cstdio>
 #include <cassert>
 #include <plog/Log.h>
 #include "BtmDGramPipe.h"
+#include "util/RPUtil.h"
 
 
 BtmDGramPipe::BtmDGramPipe(uv_udp_t *dgram) {
@@ -35,13 +37,12 @@ int BtmDGramPipe::Output(ssize_t nread, const rbuf_t *buf) {
         auto req = (rudp_send_t *) malloc(sizeof(rudp_send_t));
         memset(req, 0, sizeof(rudp_send_t));
 
-        LOGV << "send " << nread << " bytes to server";
         req->udp_send.data = this;
         req->buf = uv_buf_init(buf->base, nread);   // base and data are malloced by self
         req->addr = static_cast<sockaddr *>(buf->data);
 
         uv_udp_send(reinterpret_cast<uv_udp_send_t *>(req), mDgram, &req->buf, 1,
-                    reinterpret_cast<const sockaddr *>(buf->data), send_cb);
+                    req->addr, send_cb);
     }
     return 0;
 }
@@ -51,6 +52,7 @@ void BtmDGramPipe::send_cb(uv_udp_send_t *req, int status) {
     auto pipe = (BtmDGramPipe *) send->udp_send.data;
     send->udp_send.data = nullptr;
 
+    LOGV << "send " << send->buf.len << " bytes to " << RPUtil::Addr2Str(send->addr);
     free_rudp_send(send);
 
     if (status) {

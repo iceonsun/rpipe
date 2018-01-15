@@ -14,7 +14,7 @@
 #include "../RstSessionPipe.h"
 #include "../SessionPipe.h"
 #include "../util/RPUtil.h"
-#include "../bio/UdpBtmPipe.h"
+//#include "../bio/UdpBtmPipe.h"
 
 IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
     uv_udp_t *udp = createBtmDgram(conf, loop);
@@ -25,6 +25,7 @@ IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
     return nullptr;
 }
 
+// synchronous send
 //IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
 //    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 //    struct sockaddr_in addr;

@@ -37,7 +37,7 @@ int NMQPipe::nmqRecv(struct nmq_s *nmq) {
         OnRecv(nret, &buf);
     }
     if (nret < 0) {
-        LOGE << "nmq_recv, error " << nret;
+        LOGE_IF(nret != NMQ_RECV_EOF) << "nmq_recv, error " << nret;
     }
     if (nret == NMQ_RECV_EOF) {
         nmqRecvDone();

@@ -15,7 +15,6 @@ set(SOURCE_FILES
     nmq/NMQPipe.cpp nmq/INMQPipe.cpp
     thirdparty/json11.cpp
     util/FdUtil.cpp util/RTimer.cpp util/RPUtil.cpp util/ProcUtil.cpp
-    bio/UdpBtmPipe.cpp bio/BtmPipe.cpp
     )
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/rserver_main.cpp server/RServerApp.cpp)

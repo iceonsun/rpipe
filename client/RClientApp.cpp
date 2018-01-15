@@ -12,7 +12,7 @@
 #include "../SessionPipe.h"
 #include "../RstSessionPipe.h"
 #include "../rcommon.h"
-#include "../bio/UdpBtmPipe.h"
+//#include "../bio/UdpBtmPipe.h"
 
 int RClientApp::Init() {
     int nret = RApp::Init();
@@ -39,6 +39,7 @@ IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
     return new BtmDGramPipe(dgram);
 }
 
+// synchronous send
 //IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
 //    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 //    return new UdpBtmPipe(sock, loop);
