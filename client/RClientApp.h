@@ -40,7 +40,6 @@ private:
 
 private:
     IUINT32 mConv = 0;
-    uv_loop_t *mLoop = nullptr;
     uv_handle_t *mListenHandle = nullptr;
 };
 

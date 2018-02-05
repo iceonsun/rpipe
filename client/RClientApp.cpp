@@ -30,6 +30,7 @@ void RClientApp::Close() {
         uv_close(mListenHandle, close_cb);
         mListenHandle = nullptr;
     }
+    RApp::Close();
 }
 
 IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {

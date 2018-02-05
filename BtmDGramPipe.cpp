@@ -22,10 +22,10 @@ int BtmDGramPipe::Init() {
 }
 
 int BtmDGramPipe::Close() {
+    IPipe::Close();
     if (mDgram) {
-        uv_close(reinterpret_cast<uv_handle_t *>(mDgram), close_cb);
         mDgram->data = nullptr;
-        free(mDgram);
+        uv_close(reinterpret_cast<uv_handle_t *>(mDgram), close_cb);
         mDgram = nullptr;
     }
 

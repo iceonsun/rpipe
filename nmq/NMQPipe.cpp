@@ -6,7 +6,8 @@
 #include <plog/Log.h>
 #include "NMQPipe.h"
 
-NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {}
+NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {
+}
 
 void NMQPipe::nmqRecvDone() {
 //    nmqRecv(mNmq);  // stack overflows
@@ -36,12 +37,15 @@ int NMQPipe::nmqRecv(struct nmq_s *nmq) {
         tot += nret;
         OnRecv(nret, &buf);
     }
-    if (nret < 0) {
-        LOGE_IF(nret != NMQ_RECV_EOF) << "nmq_recv, error " << nret;
-    }
+
+    // todo: when recv done, delay closing stream because it may not finish writing
+    LOGV_IF(nret == NMQ_RECV_EOF) << "nmq_recv, eof " << nret;;
+    LOGE_IF(nret < 0 && nret != NMQ_RECV_EOF) << "nmq_recv, error " << nret;
+
     if (nret == NMQ_RECV_EOF) {
-        nmqRecvDone();
+//        nmqRecvDone();
         SetOnRecvCb(nullptr);
+        nmqRecvDone();
     }
     return nret < 0 ? nret : tot;
 }
@@ -68,6 +72,7 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
 
 int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
     if (nread < 0) {
+        LOGV << "TopPipe error: " << nread;
         nmq_shutdown_send(mNmq);
 //        Output(nread, buf);
     } else if (nread > 0) {
@@ -90,6 +95,7 @@ IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
         buf.len = len;
         nret = Output(len, &buf);
     } else if (len == NMQ_SEND_EOF) {
+        LOGV << "nmq send done";
         nmqSendDone();
         nret = 0;
     } else {

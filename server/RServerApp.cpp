@@ -76,7 +76,7 @@ ISessionPipe *RServerApp::OnRawData(const ISessionPipe::KeyType &key, const void
         int nret = connect(sock, reinterpret_cast<const sockaddr *>(GetTarget()), sizeof(*GetTarget()));
         if (nret) {
             ISessionPipe *sess = new RstSessionPipe(nullptr, key, static_cast<const sockaddr_in *>(addr));
-            LOGE << "failed to connect " << RPUtil::Addr2Str((const struct sockaddr *) addr) << ", err: "
+            LOGE << "failed to connect " << RPUtil::Addr2Str((const struct sockaddr *) GetTarget()) << ", err: "
                  << strerror(errno);
             return sess;
         }

@@ -29,15 +29,17 @@ int BridgePipe::Init() {
 
 int BridgePipe::Close() {
     IPipe::Close();
+
     if (!mTopPipes.empty()) {
-        removeAll();
+        for (auto &e: mTopPipes) {
+            RemovePipe(e.second);
+        }
+        mTopPipes.clear();
     }
 
     if (mBtmPipe) {
         mBtmPipe->Close();
         SetOutputCb(nullptr);
-        mBtmPipe->SetOnRecvCb(nullptr);
-        mBtmPipe->SetOnErrCb(nullptr);
         delete mBtmPipe;
         mBtmPipe = nullptr;
     }
@@ -176,7 +178,6 @@ void BridgePipe::cleanErrPipes() {
     }
     mErrPipes.clear();
 }
-
 
 void BridgePipe::OnTopPipeError(ISessionPipe *pipe, int err) {
     if (err == UV_EOF) {

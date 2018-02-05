@@ -41,7 +41,7 @@ int TopStreamPipe::Input(ssize_t nread, const rbuf_t *buf) {
 int TopStreamPipe::Close() {
     IPipe::Close();
 
-    if (mTopStream) {
+    if (mTopStream) {   // todo: delay close
         uv_close(reinterpret_cast<uv_handle_t *>(mTopStream), close_cb);
         mTopStream->data = nullptr;
         mTopStream = nullptr;
@@ -84,6 +84,7 @@ void TopStreamPipe::write_cb(uv_write_t *uvreq, int status) {
     req->write.data = nullptr;
 
     free_rwrite_req(req);
+    LOGV_IF(status == UV_ECANCELED) << "stream write canceled";
     if (status < 0 && UV_ECANCELED != status) {
         pipe->OnError(pipe, status);
     }

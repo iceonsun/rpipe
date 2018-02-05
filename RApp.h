@@ -42,7 +42,16 @@ public:
 
     const sockaddr_in *GetTarget();
 
-    static INMQPipe * NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top);
+    static INMQPipe *NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top);
+
+    static const int SIG_EXIT = SIGUSR1;
+
+protected:
+    virtual void onExitSignal();
+
+    virtual void watchExitSignal();
+
+    static void close_signal_handler(uv_signal_t *handle, int signum);
 
 private:
     static void flush_cb(uv_timer_t *handle);
@@ -54,14 +63,17 @@ private:
 
     int makeDaemon();
 
+protected:
+    uv_loop_t *mLoop = nullptr;
+
 private:
     BridgePipe *mBridge = nullptr;
     uv_timer_t *mFlushTimer = nullptr;
     plog::IAppender *mFileAppender = nullptr;
     plog::IAppender *mConsoleAppender = nullptr;
     Config mConf;
-    uv_loop_t *mLoop = nullptr;
     struct sockaddr_in mTargetAddr = {0};
+    uv_signal_t *mExitSig = nullptr;
 };
 
 

@@ -20,10 +20,13 @@ int RApp::Init() {
 }
 
 void RApp::Close() {
-    if (mBridge) {
-        mBridge->SetOnCreateNewPipeCb(nullptr);
-        mBridge->SetOnErrCb(nullptr);
+    if (mExitSig) {
+        uv_signal_stop(mExitSig);
+        uv_close(reinterpret_cast<uv_handle_t *>(mExitSig), close_cb);
+        mExitSig = nullptr;
+    }
 
+    if (mBridge) {
         mBridge->Close();
         delete mBridge;
         mBridge = nullptr;
@@ -33,6 +36,18 @@ void RApp::Close() {
         uv_timer_stop(mFlushTimer);
         uv_close(reinterpret_cast<uv_handle_t *>(mFlushTimer), close_cb);
         mFlushTimer = nullptr;
+    }
+
+    if (mLoop) {
+        uv_stop(mLoop);
+        if (mConf.isDaemon) {   // it will crash if delete default loop
+            if (!uv_loop_close(mLoop)) {
+                free(mLoop);
+            } else {
+                LOGE << "loop not closed properly";
+            }
+        }
+        mLoop = nullptr;
     }
 }
 
@@ -93,6 +108,7 @@ int RApp::doInit() {
     uv_timer_init(mLoop, mFlushTimer);
     mFlushTimer->data = this;
 
+    watchExitSignal();
     return 0;
 }
 
@@ -133,6 +149,26 @@ uv_loop_t *RApp::GetLoop() {
 void RApp::flush_cb(uv_timer_t *handle) {
     RApp *app = static_cast<RApp *>(handle->data);
     app->Flush();
+}
+
+
+void RApp::close_signal_handler(uv_signal_t *handle, int signum) {
+    RApp *app = static_cast<RApp *>(handle->data);
+    app->onExitSignal();
+}
+
+void RApp::onExitSignal() {
+    LOGD << "Receive exit signal. Exit!";
+    Close();
+}
+
+void RApp::watchExitSignal() {
+    if (!mExitSig) {
+        mExitSig = static_cast<uv_signal_t *>(malloc(sizeof(uv_signal_t)));
+        uv_signal_init(mLoop, mExitSig);
+        mExitSig->data = this;
+        uv_signal_start(mExitSig, close_signal_handler, SIG_EXIT);
+    }
 }
 
 BridgePipe *RApp::GetBridgePipe() {
