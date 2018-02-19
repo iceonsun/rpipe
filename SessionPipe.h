@@ -13,15 +13,15 @@
 
 class SessionPipe : public ISessionPipe {
 public:
-    static const IUINT32 MIN_EXPIRE_SEC = 10;
-    static const IUINT32 MAX_EXPIRE_SEC = 120;
+    static const uint32_t MIN_EXPIRE_SEC = 10;
+    static const uint32_t MAX_EXPIRE_SEC = 120;
 
     // this two methods should be declared here. remove them from ipipe
     SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const sockaddr_in *target);
 
-    SessionPipe(IPipe *pipe, uv_loop_t *loop, IUINT32 conv, const sockaddr_in *target);
+    SessionPipe(IPipe *pipe, uv_loop_t *loop, uint32_t conv, const sockaddr_in *target);
 
-    virtual void SetExpireIfNoOps(IUINT32 sec);
+    virtual void SetExpireIfNoOps(uint32_t sec);
 
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
@@ -47,8 +47,8 @@ private:
     int doSend(ssize_t nread, const rbuf_t *buf);
 
 private:
-    IUINT32 mCnt = 0;
-    IUINT32 mLastCnt = 0;
+    uint32_t mCnt = 0;
+    uint32_t mLastCnt = 0;
     RTimer *mRepeatTimer = nullptr;
     uv_loop_t *mLoop = nullptr;
 };

@@ -99,7 +99,7 @@ ISessionPipe *RServerApp::CreateStreamPipe(int sock, const ISessionPipe::KeyType
     auto &conf = GetConfig();
     IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, conf.param.mtu - SEG_HEAD_SIZE);
 
-    IUINT32 conv = ISessionPipe::ConvFromKey(key);
+    uint32_t conv = ISessionPipe::ConvFromKey(key);
     auto nmq = NewNMQPipeFromConf(conv, conf, top);
     const struct sockaddr_in *addr = static_cast<const sockaddr_in *>(arg);
     auto *sess = new SessionPipe(nmq, loop, key, addr);

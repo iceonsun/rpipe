@@ -12,11 +12,11 @@ SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, const KeyType &key, const
     mLoop = loop;
 }
 
-SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, IUINT32 conv, const sockaddr_in *target)
+SessionPipe::SessionPipe(IPipe *pipe, uv_loop_t *loop, uint32_t conv, const sockaddr_in *target)
         : SessionPipe(pipe, loop, BuildKey(conv, target), target) {
 }
 
-void SessionPipe::SetExpireIfNoOps(IUINT32 sec) {
+void SessionPipe::SetExpireIfNoOps(uint32_t sec) {
     assert(sec >= MIN_EXPIRE_SEC && sec < MAX_EXPIRE_SEC);
     if (mRepeatTimer) {
         LOGD << "timer already running";
@@ -44,7 +44,7 @@ int SessionPipe::Input(ssize_t nread, const rbuf_t *buf) {
     assert(nread >= 0);
     if (nread >= HEAD_LEN) {
         char cmd;
-        IUINT32 conv;
+        uint32_t conv;
         const auto key = BuildKey(nread, buf);
         const char *p = decodeHead(buf->base, nread, &cmd, &conv);
         int headLen = p - buf->base;

@@ -39,7 +39,7 @@ private:
     static void svr_conn_cb(uv_stream_t *server, int status);
 
 private:
-    IUINT32 mConv = 0;
+    uint32_t mConv = 0;
     uv_handle_t *mListenHandle = nullptr;
 };
 

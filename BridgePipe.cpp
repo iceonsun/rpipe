@@ -155,7 +155,7 @@ int BridgePipe::AddPipe(ISessionPipe *pipe) {
     return 0;
 }
 
-void BridgePipe::Flush(IUINT32 curr) {
+void BridgePipe::Flush(uint32_t curr) {
     cleanErrPipes();
     mBtmPipe->Flush(curr);  // normall this will not be necessary if btm pipe input data passively from other soruce
 

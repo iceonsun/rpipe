@@ -7,12 +7,12 @@
 
 
 #include <uv.h>
-#include "nmq/ktype.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdint.h>
 
 typedef struct rbuf_t {
     char *base;

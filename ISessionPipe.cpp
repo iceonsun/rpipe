@@ -40,14 +40,14 @@ int ISessionPipe::Close() {
 int ISessionPipe::IsCloseSignal(ssize_t nread, const rbuf_t *buf) {
     if (nread >= HEAD_LEN && buf && buf->base) {
         char cmd;
-        IUINT32 conv;
+        uint32_t conv;
         decodeHead(buf->base, nread, &cmd, &conv);
         return cmd == RST || cmd == FIN;
     }
     return 0;
 }
 
-ssize_t ISessionPipe::insertHead(char *base, int len, char cmd, IUINT32 conv) {
+ssize_t ISessionPipe::insertHead(char *base, int len, char cmd, uint32_t conv) {
     assert(base != nullptr);
     assert(len >= HEAD_LEN);
 
@@ -56,14 +56,14 @@ ssize_t ISessionPipe::insertHead(char *base, int len, char cmd, IUINT32 conv) {
     return sizeof(conv) + 1;
 }
 
-const char *ISessionPipe::decodeHead(const char *base, int len, char *cmd, IUINT32 *conv) {
+const char *ISessionPipe::decodeHead(const char *base, int len, char *cmd, uint32_t *conv) {
     assert(base != nullptr);
     assert(len >= HEAD_LEN);
     *cmd = base[0];
     return decode_uint32(conv, base + 1);
 }
 
-ISessionPipe::KeyType ISessionPipe::BuildKey(IUINT32 conv, const struct sockaddr_in *addr) {
+ISessionPipe::KeyType ISessionPipe::BuildKey(uint32_t conv, const struct sockaddr_in *addr) {
     std::ostringstream out;
     if (addr == nullptr) {
         out << ":" << std::to_string(conv);
@@ -76,7 +76,7 @@ ISessionPipe::KeyType ISessionPipe::BuildKey(IUINT32 conv, const struct sockaddr
 ISessionPipe::KeyType ISessionPipe::BuildKey(ssize_t nread, const rbuf_t *rbuf) {
     if (nread >= HEAD_LEN && rbuf && rbuf->base) {
         char cmd;
-        IUINT32 conv;
+        uint32_t conv;
         decodeHead(rbuf->base, nread, &cmd, &conv);
 
         struct sockaddr_in *addr = static_cast<sockaddr_in *>(rbuf->data);
@@ -90,7 +90,7 @@ ISessionPipe::KeyType ISessionPipe::BuildKey(ssize_t nread, const rbuf_t *rbuf) 
 //#endif
 }
 
-IUINT32 ISessionPipe::ConvFromKey(const ISessionPipe::KeyType &key) {
+uint32_t ISessionPipe::ConvFromKey(const ISessionPipe::KeyType &key) {
     if (!key.empty()) {
         ssize_t pos = key.rfind(':');
         if (pos != std::string::npos) {
@@ -100,13 +100,13 @@ IUINT32 ISessionPipe::ConvFromKey(const ISessionPipe::KeyType &key) {
     return 0;
 }
 
-IUINT32 ISessionPipe::decodeConv(const ISessionPipe::KeyType &key) {
+uint32_t ISessionPipe::decodeConv(const ISessionPipe::KeyType &key) {
     auto pos = key.rfind(':');
     if (pos == std::string::npos || pos == key.length() - 1) {
         return 0;
     }
     unsigned long conv = std::stoul(key.substr(pos + 1));
-    return static_cast<IUINT32>(conv);
+    return static_cast<uint32_t>(conv);
 }
 
 void ISessionPipe::notifyPeerClose(char cmd) {

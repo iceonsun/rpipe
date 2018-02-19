@@ -6,7 +6,7 @@
 #include <plog/Log.h>
 #include "INMQPipe.h"
 
-INMQPipe::INMQPipe(IUINT32 conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
+INMQPipe::INMQPipe(uint32_t conv, IPipe *topPipe) : ITopContainerPipe(topPipe) {
     mConv = conv;
     mNmq = nmq_new(mConv, this);
 }
@@ -33,16 +33,16 @@ int INMQPipe::Close() {
     return 0;
 }
 
-void INMQPipe::Flush(IUINT32 curr) {
+void INMQPipe::Flush(uint32_t curr) {
     ITopContainerPipe::Flush(curr);
     nmq_flush(mNmq, curr);
 }
 
-void INMQPipe::SetWndSize(IUINT32 sndwnd, IUINT32 rcvwnd) {
+void INMQPipe::SetWndSize(uint32_t sndwnd, uint32_t rcvwnd) {
     nmq_set_wnd_size(mNmq, sndwnd, rcvwnd);
 }
 
-IINT32 INMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg) {
+int32_t INMQPipe::nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg) {
     auto pipe = static_cast<INMQPipe *>(nmq->arg);
     return pipe->nmqOutput(data, len, nmq);
 }
@@ -51,23 +51,23 @@ void INMQPipe::SetFlowControl(bool fc) {
     nmq_set_fc_on(mNmq, fc ? 1 : 0);
 }
 
-void INMQPipe::SetMSS(IUINT32 MSS) {
+void INMQPipe::SetMSS(uint32_t MSS) {
     nmq_set_nmq_mtu(mNmq, MSS);
 }
 
-void INMQPipe::SetInterval(IUINT16 interval) {
+void INMQPipe::SetInterval(uint16_t interval) {
     nmq_set_interval(mNmq, interval);
 }
 
-void INMQPipe::SetTolerance(IUINT8 tolerance) {
+void INMQPipe::SetTolerance(uint8_t tolerance) {
     nmq_set_trouble_tolerance(mNmq, tolerance);
 }
 
-void INMQPipe::SetAckLimit(IUINT8 ackLim) {
+void INMQPipe::SetAckLimit(uint8_t ackLim) {
     nmq_set_dup_acks_limit(mNmq, ackLim);
 }
 
-void INMQPipe::SetSegPoolCap(IUINT8 CAP) {
+void INMQPipe::SetSegPoolCap(uint8_t CAP) {
     nmq_set_segment_pool_cap(mNmq, CAP);
 }
 
@@ -76,7 +76,7 @@ void INMQPipe::SetFcAlpha(float alpha) {
 }
 
 void INMQPipe::SetSteady(bool steady) {
-    nmq_set_steady(mNmq, static_cast<IUINT8>(steady));
+    nmq_set_steady(mNmq, static_cast<uint8_t>(steady));
 }
 
 void INMQPipe::sendFailureCb(NMQ *q, uint32_t sn) {

@@ -7,7 +7,7 @@
 #include <plog/Log.h>
 #include "TopStreamPipe.h"
 
-TopStreamPipe::TopStreamPipe(uv_stream_t *stream, IUINT32 mss) {
+TopStreamPipe::TopStreamPipe(uv_stream_t *stream, uint32_t mss) {
     mTopStream = stream;
     mMSS = mss;
 }

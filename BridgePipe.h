@@ -23,7 +23,7 @@ public:
 
     int Close() override;
 
-    void Flush(IUINT32 curr) override;
+    void Flush(uint32_t curr) override;
 
     // top pipes should call this function to send data
     virtual int PSend(ISessionPipe *pipe, ssize_t nread, const rbuf_t *buf);

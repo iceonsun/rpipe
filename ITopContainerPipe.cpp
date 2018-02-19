@@ -48,7 +48,7 @@ IPipe* ITopContainerPipe::topPipe() {
     return mTopPipe;
 }
 
-void ITopContainerPipe::Flush(IUINT32 curr) {
+void ITopContainerPipe::Flush(uint32_t curr) {
     if (mTopPipe) {
         mTopPipe->Flush(curr);
     }

@@ -9,7 +9,6 @@
 #include <functional>
 
 
-#include "nmq/ktype.h"
 #include "rcommon.h"
 
 #define PIPE_BUFSIZ 1500
@@ -58,7 +57,7 @@ public:
 
     virtual int Close();
 
-    virtual void Flush(IUINT32 curr) {}
+    virtual void Flush(uint32_t curr) {}
 
     // prevent copying
     IPipe &operator=(const IPipe &pipe) = delete;

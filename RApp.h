@@ -43,7 +43,7 @@ public:
 
     const sockaddr_in *GetTarget();
 
-    static INMQPipe *NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top);
+    static INMQPipe *NewNMQPipeFromConf(uint32_t conv, const Config &conf, IPipe *top);
 
     static const int SIG_EXIT = SIGUSR1;
 

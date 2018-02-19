@@ -16,7 +16,7 @@ public:
 
     int Close() override;
 
-    void Flush(IUINT32 curr) override;
+    void Flush(uint32_t curr) override;
 
     // new methods
     virtual IPipe* topPipe();

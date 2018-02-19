@@ -9,15 +9,15 @@
 
 class NMQPipe : public INMQPipe {
 public:
-    NMQPipe(IUINT32 conv, IPipe *topPipe);
+    NMQPipe(uint32_t conv, IPipe *topPipe);
 
     int Input(ssize_t nread, const rbuf_t *buf) override;
 
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
-    void Flush(IUINT32 curr) override;
+    void Flush(uint32_t curr) override;
 
-    IINT32 nmqOutput(const char *data, const int len, struct nmq_s *nmq) override;
+    int32_t nmqOutput(const char *data, const int len, struct nmq_s *nmq) override;
 
 protected:
     void onSendFailed(struct nmq_s *q, uint32_t sn) override;

@@ -29,7 +29,7 @@ private:
     using IPipe::Input;
 
     uv_udp_t *mDgram = nullptr;
-    IUINT32 mCnt = 0;
+    uint32_t mCnt = 0;
 };
 
 

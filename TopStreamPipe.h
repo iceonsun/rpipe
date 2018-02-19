@@ -11,7 +11,7 @@
 
 class TopStreamPipe : public IPipe {
 public:
-    explicit TopStreamPipe(uv_stream_t *stream, IUINT32 mss);
+    explicit TopStreamPipe(uv_stream_t *stream, uint32_t mss);
 
     int Init() override;
 
@@ -30,7 +30,7 @@ protected:
 
 private:
     uv_stream_t *mTopStream = nullptr;
-    IUINT32 mMSS = 0;
+    uint32_t mMSS = 0;
 };
 
 

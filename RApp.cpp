@@ -179,7 +179,7 @@ const sockaddr_in *RApp::GetTarget() {
     return &mTargetAddr;
 }
 
-INMQPipe *RApp::NewNMQPipeFromConf(IUINT32 conv, const Config &conf, IPipe *top) {
+INMQPipe *RApp::NewNMQPipeFromConf(uint32_t conv, const Config &conf, IPipe *top) {
     auto nmq = new NMQPipe(conv, top);
     nmq->SetMSS(conf.param.mtu);
     nmq->SetWndSize(conf.param.sndwnd, conf.param.rcvwnd);

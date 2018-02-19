@@ -6,7 +6,7 @@
 #include <plog/Log.h>
 #include "NMQPipe.h"
 
-NMQPipe::NMQPipe(IUINT32 conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {
+NMQPipe::NMQPipe(uint32_t conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {
 }
 
 void NMQPipe::nmqRecvDone() {
@@ -85,7 +85,7 @@ int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
     return nread;
 }
 
-IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
+int32_t NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
     int nret = -1;
     if (len > 0) {
         rbuf_t buf = {0};
@@ -105,7 +105,7 @@ IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
     return nret;
 }
 
-void NMQPipe::Flush(IUINT32 curr) {
+void NMQPipe::Flush(uint32_t curr) {
     INMQPipe::Flush(curr);
     nmqRecv(mNmq);  // necessary!!
 }
