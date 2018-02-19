@@ -11,8 +11,8 @@
 #include "../TopStreamPipe.h"
 #include "../SessionPipe.h"
 #include "../RstSessionPipe.h"
-#include "../rcommon.h"
 //#include "../bio/UdpBtmPipe.h"
+#include "../nmq/NMQPipe.h"
 
 int RClientApp::Init() {
     int nret = RApp::Init();

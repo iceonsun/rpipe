@@ -18,10 +18,6 @@ public:
 
     int Send(ssize_t nread, const rbuf_t *buf) override;
 
-    int Input(ssize_t nread, const rbuf_t *buf) override;
-
-    void SetOutputCb(const PipeCb &cb) override;
-
     int Close() override;
 
 protected:
@@ -29,6 +25,9 @@ protected:
     static void recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf, const struct sockaddr *addr,
                         unsigned flags);
 private:
+    using IPipe::SetOutputCb;
+    using IPipe::Input;
+
     uv_udp_t *mDgram = nullptr;
     IUINT32 mCnt = 0;
 };

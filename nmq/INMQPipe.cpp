@@ -15,7 +15,7 @@ int INMQPipe::Init() {
     ITopContainerPipe::Init();
     nmq_set_output_cb(mNmq, nmqOutputCb);
     nmq_start(mNmq);
-
+    nmq_set_max_attempt(mNmq, 20, sendFailureCb);
     return 0;
 }
 
@@ -77,4 +77,9 @@ void INMQPipe::SetFcAlpha(float alpha) {
 
 void INMQPipe::SetSteady(bool steady) {
     nmq_set_steady(mNmq, static_cast<IUINT8>(steady));
+}
+
+void INMQPipe::sendFailureCb(NMQ *q, uint32_t sn) {
+    INMQPipe *pipe1 = static_cast<INMQPipe *>(q->arg);
+    pipe1->onSendFailed(q, sn);
 }

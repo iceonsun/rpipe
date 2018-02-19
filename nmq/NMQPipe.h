@@ -20,6 +20,7 @@ public:
     IINT32 nmqOutput(const char *data, const int len, struct nmq_s *nmq) override;
 
 protected:
+    void onSendFailed(struct nmq_s *q, uint32_t sn) override;
 
     void nmqRecvDone();
 

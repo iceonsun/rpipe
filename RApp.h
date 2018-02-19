@@ -8,7 +8,8 @@
 #include "uv.h"
 #include "Config.h"
 #include "BridgePipe.h"
-#include "nmq/INMQPipe.h"
+
+class INMQPipe;
 
 namespace plog {
     class IAppender;

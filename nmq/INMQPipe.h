@@ -40,7 +40,12 @@ public:
 
     virtual IINT32 nmqOutput(const char *data, const int len, struct nmq_s *nmq) = 0;
 
+protected:
+    virtual void onSendFailed(struct nmq_s *q, uint32_t sn) = 0;
+
 private:
+    static void sendFailureCb(struct nmq_s *q, uint32_t sn);
+
     static IINT32 nmqOutputCb(const char *data, const int len, struct nmq_s *nmq, void *arg);
 
 protected:

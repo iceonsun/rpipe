@@ -69,7 +69,7 @@ void BtmDGramPipe::recv_cb(uv_udp_t *handle, ssize_t nread, const uv_buf_t *buf,
         rbuf.base = buf->base;
         rbuf.len = nread;
         rbuf.data = (void *) addr;
-        pipe->OnRecv(nread, &rbuf);
+        pipe->Input(nread, &rbuf);
     }   // todo nret should be check here!!
     else if (nread < 0) {
         pipe->OnError(pipe, nread);
@@ -94,13 +94,4 @@ int BtmDGramPipe::Send(ssize_t nread, const rbuf_t *buf) {
         nret = Output(nread, &rbuf);
     }
     return nret;
-}
-
-
-void BtmDGramPipe::SetOutputCb(const PipeCb &cb) {
-    LOGE << "cannot set output of a btm terminal.";
-}
-
-int BtmDGramPipe::Input(ssize_t nread, const rbuf_t *buf) {
-    LOGE <<  "cannot call input on a btm stream pipe";
 }

@@ -33,7 +33,9 @@ set_target_properties(
         PROPERTIES
         COMPILE_DEFINITIONS RPIPE_IS_SERVER
 )
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+add_definitions(-Wall -pg)
 
 add_executable(echo_client test/tcp_echo_client.cpp rcommon.c)
 add_executable(echo_server test/test_tcp_echo_server.cpp rcommon.c)

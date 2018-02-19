@@ -14,6 +14,7 @@
 #include "../RstSessionPipe.h"
 #include "../SessionPipe.h"
 #include "../util/RPUtil.h"
+#include "../nmq/NMQPipe.h"
 //#include "../bio/UdpBtmPipe.h"
 
 IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {

@@ -73,7 +73,7 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
 int NMQPipe::Send(ssize_t nread, const rbuf_t *buf) {
     if (nread < 0) {
         LOGV << "TopPipe error: " << nread;
-        nmq_shutdown_send(mNmq);
+        nmq_shutdown_send(mNmq);    // todo: remove this from nmq. delay closing
 //        Output(nread, buf);
     } else if (nread > 0) {
         ssize_t nleft = nread;
@@ -108,4 +108,9 @@ IINT32 NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
 void NMQPipe::Flush(IUINT32 curr) {
     INMQPipe::Flush(curr);
     nmqRecv(mNmq);  // necessary!!
+}
+
+void NMQPipe::onSendFailed(NMQ *q, uint32_t sn) {
+    LOGV << "send failure. close self";
+    nmqSendDone();
 }

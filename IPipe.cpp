@@ -57,5 +57,11 @@ int IPipe::Close() {
     mOutputCb = nullptr;
     mOnRecvCb = nullptr;
     mErrCb = nullptr;
+    return 0;
+}
+
+int IPipe::Init() {
+    mInited = true;
+    return 0;
 }
 

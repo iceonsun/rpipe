@@ -22,7 +22,7 @@ public:
     virtual ~IPipe();
 
     // todo: init & start
-    virtual int Init() { mInited = true; };
+    virtual int Init();;
 
     virtual void Start() { assert(mInited); }
 
