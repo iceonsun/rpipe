@@ -60,7 +60,7 @@ uv_udp_t *RServerApp::createBtmDgram(const Config &conf, uv_loop_t *loop) {
     LOGD << "server, listening on udp: " << conf.param.localListenIface << ":" << conf.param.localListenPort;
     LOGD << "target tcp " << conf.param.targetIp << ":" << conf.param.targetPort;
 
-    int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, UV_UDP_REUSEADDR);
+    int nret = uv_udp_bind(udp, (const struct sockaddr *) &addr, 0);
     if (nret) {
         LOGE << "uv_bind error: " << uv_strerror(nret);
         free(udp);

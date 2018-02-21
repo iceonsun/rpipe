@@ -131,7 +131,7 @@ ISessionPipe *BridgePipe::FindPipe(const ISessionPipe::KeyType &key) const {
 int BridgePipe::AddPipe(ISessionPipe *pipe) {
     if (pipe && !pipe->GetKey().empty()) {
         const auto &key = pipe->GetKey();
-
+        LOGD << "Add new pipe: " << key;
         auto ret = mTopPipes.insert({key, pipe});
         LOGV << "add pipe: " << pipe->GetKey();
         if (!ret.second) {
