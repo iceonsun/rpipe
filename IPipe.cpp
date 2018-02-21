@@ -36,10 +36,12 @@ void IPipe::SetOnRecvCb(const PipeCb &cb) {
 }
 
 int IPipe::Send(ssize_t nread, const rbuf_t *buf) {
+    assert(mInited);
     return Output(nread, buf);
 }
 
 int IPipe::Input(ssize_t nread, const rbuf_t *buf) {
+    assert(mInited);
     return OnRecv(nread, buf);
 }
 

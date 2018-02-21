@@ -9,7 +9,7 @@
 #include "../rcommon.h"
 
 const char *ip = "127.0.0.1";
-const int port = 10010;
+const int port = 10000;
 
 uv_tcp_t *tcp = nullptr;
 //int sock = 0;

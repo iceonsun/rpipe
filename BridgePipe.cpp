@@ -3,18 +3,20 @@
 //
 
 #include <cassert>
-#include <nmq/nmq.h>
 #include <plog/Log.h>
 #include "BridgePipe.h"
 
-BridgePipe::BridgePipe(IPipe *btmPipe) {
+BridgePipe::BridgePipe(IPipe *btmPipe, uv_loop_t *loop) {
     mBtmPipe = btmPipe;
+    mLoop = loop;
 }
 
 int BridgePipe::Init() {
     IPipe::Init();
 
-    mBtmPipe->Init();
+    if (mBtmPipe->Init()) {
+        return -1;
+    }
 
     auto out = std::bind(&IPipe::Send, mBtmPipe, std::placeholders::_1, std::placeholders::_2);
     SetOutputCb(out);
@@ -24,6 +26,9 @@ int BridgePipe::Init() {
 
     auto err = std::bind(&BridgePipe::OnBtmPipeError, this, std::placeholders::_1, std::placeholders::_2);
     mBtmPipe->SetOnErrCb(err);
+
+    auto handleFn = std::bind(&BridgePipe::handleMessage, this, std::placeholders::_1);
+    mHandler = Handler::NewHandler(mLoop, handleFn);
     return 0;
 }
 
@@ -47,6 +52,8 @@ int BridgePipe::Close() {
     if (!mErrPipes.empty()) {
         cleanErrPipes();
     }
+
+    mHandler = nullptr;
     return 0;
 }
 
@@ -73,9 +80,9 @@ int BridgePipe::Input(ssize_t nread, const rbuf_t *buf) {
         nret = sess->Input(nread, buf);
         if (nret < 0) {
             if (nret == UV_EOF) {
-                LOGV <<  "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+                LOGV << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
             } else {
-                LOGE  << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
+                LOGE << "session pipe error: " << nret << ", close pipe: " << sess->GetKey();
             }
             RemovePipe(sess);
         }
@@ -107,7 +114,7 @@ int BridgePipe::removeAll() {
 int BridgePipe::doRemove(std::map<ISessionPipe::KeyType, ISessionPipe *>::iterator it) {
     if (it != mTopPipes.end()) {
         IPipe *pipe = it->second;
-        pipe->SetOutputCb(nullptr);
+        pipe->SetOutputCb(nullptr);     // cannot send data and report error to bridge any more
         pipe->SetOnErrCb(nullptr);
 
         mErrPipes.insert(*it);
@@ -118,11 +125,6 @@ int BridgePipe::doRemove(std::map<ISessionPipe::KeyType, ISessionPipe *>::iterat
 ISessionPipe *BridgePipe::FindPipe(const ISessionPipe::KeyType &key) const {
     auto it = mTopPipes.find(key);
     return it != mTopPipes.end() ? it->second : nullptr;
-}
-
-void BridgePipe::Start() {
-    IPipe::Start();
-    mBtmPipe->Start();
 }
 
 // if (key) must be true
@@ -138,7 +140,6 @@ int BridgePipe::AddPipe(ISessionPipe *pipe) {
         }
 
         pipe->Init();
-        pipe->Start();
         auto out = std::bind(&BridgePipe::PSend, this, pipe, std::placeholders::_1, std::placeholders::_2);
         pipe->SetOutputCb(out);
 
@@ -171,19 +172,19 @@ void BridgePipe::Flush(uint32_t curr) {
 
 void BridgePipe::cleanErrPipes() {
     for (auto &e: mErrPipes) {
-        LOGV << "deleting pipe: " << e.second->GetKey();
+        auto msg = mHandler->ObtainMessage(MSG_CLOSE_PIPE, e.second);
+        mHandler->RemoveMessage(msg);
+        mHandler->SendMessageDelayed(msg, 500);
         mTopPipes.erase(e.first);
-        e.second->Close();
-        delete e.second;
     }
     mErrPipes.clear();
 }
 
 void BridgePipe::OnTopPipeError(ISessionPipe *pipe, int err) {
     if (err == UV_EOF) {
-        LOGV << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
+        LOGV << "pipe " << pipe->GetKey() << " error " << err << " : " << uv_strerror(err);
     } else {
-        LOGE << "pipe " << pipe->GetKey() << " error: " << uv_strerror(err);
+        LOGE << "pipe " << pipe->GetKey() << " error: " << err << " : " << uv_strerror(err);
     }
     RemovePipe(pipe);
 }
@@ -214,5 +215,18 @@ ISessionPipe *BridgePipe::onCreateNewPipe(const ISessionPipe::KeyType &key, void
 
 void BridgePipe::SetOnCreateNewPipeCb(const OnCreatePipeCb &cb) {
     mCreateNewPipeCb = cb;
+}
+
+void BridgePipe::handleMessage(const Handler::Message &message) {
+    switch (message.what) {
+        case MSG_CLOSE_PIPE:
+            ISessionPipe *pipe = static_cast<ISessionPipe *>(message.obj);
+            LOGV << "deleting pipe: " << pipe->GetKey();
+            pipe->Close();
+            delete pipe;
+            break;
+        default:
+            break;
+    }
 }
 

@@ -13,7 +13,7 @@ TopStreamPipe::TopStreamPipe(uv_stream_t *stream, uint32_t mss) {
 }
 
 int TopStreamPipe::Init() {
-    int n = uv_read_start(mTopStream, alloc_buf, echo_read);
+    int n = uv_read_start(mTopStream, alloc_buf, read_cb);
     mTopStream->data = this;
     assert(mMSS > 0);
     return n;
@@ -49,7 +49,7 @@ int TopStreamPipe::Close() {
     return 0;
 }
 
-void TopStreamPipe::echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
+void TopStreamPipe::read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf) {
     auto pipe = (TopStreamPipe *) stream->data;
 
     rbuf_t rbuf = {0};

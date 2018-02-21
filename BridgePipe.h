@@ -9,12 +9,13 @@
 #include <map>
 #include "IPipe.h"
 #include "ISessionPipe.h"
+#include "util/Handler.h"
 
 class BridgePipe : public IPipe {
 public:
     typedef std::function<ISessionPipe *(const ISessionPipe::KeyType &, const void *addr)> OnCreatePipeCb;
 
-    explicit BridgePipe(IPipe *btmPipe);
+    explicit BridgePipe(IPipe *btmPipe, uv_loop_t *loop);
 
     /* inherited from IPipe */
     int Init() override;
@@ -43,8 +44,6 @@ public:
 
     virtual void SetOnCreateNewPipeCb(const OnCreatePipeCb &cb);
 
-    void Start() override;
-
 protected:
     virtual ISessionPipe *onCreateNewPipe(const ISessionPipe::KeyType &key, void *addr);
 
@@ -54,12 +53,19 @@ private:
 
     int removeAll();
 
-    inline void cleanErrPipes();
+    void cleanErrPipes();
+
+    void handleMessage(const Handler::Message &message);
+
+private:
+    static const int MSG_CLOSE_PIPE = 0;
 
     std::map<ISessionPipe::KeyType, ISessionPipe *> mTopPipes;
     std::map<ISessionPipe::KeyType, ISessionPipe *> mErrPipes;
     IPipe *mBtmPipe;
     OnCreatePipeCb mCreateNewPipeCb;
+    uv_loop_t *mLoop = nullptr;
+    Handler::SPHandler mHandler;
 };
 
 

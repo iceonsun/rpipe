@@ -42,6 +42,7 @@ int ITopContainerPipe::Close() {
         delete mTopPipe;
         mTopPipe = nullptr;
     }
+    return 0;
 }
 
 IPipe* ITopContainerPipe::topPipe() {

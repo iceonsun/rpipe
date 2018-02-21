@@ -10,6 +10,7 @@ NMQPipe::NMQPipe(uint32_t conv, IPipe *topPipe) : INMQPipe(conv, topPipe) {
 }
 
 void NMQPipe::nmqRecvDone() {
+    SetOnRecvCb(nullptr);
 //    nmqRecv(mNmq);  // stack overflows
     rbuf_t rbuf = {0};
     Output(UV_EOF, &rbuf);
@@ -43,8 +44,6 @@ int NMQPipe::nmqRecv(struct nmq_s *nmq) {
     LOGE_IF(nret < 0 && nret != NMQ_RECV_EOF) << "nmq_recv, error " << nret;
 
     if (nret == NMQ_RECV_EOF) {
-//        nmqRecvDone();
-        SetOnRecvCb(nullptr);
         nmqRecvDone();
     }
     return nret < 0 ? nret : tot;
@@ -107,7 +106,7 @@ int32_t NMQPipe::nmqOutput(const char *data, const int len, struct nmq_s *nmq) {
 
 void NMQPipe::Flush(uint32_t curr) {
     INMQPipe::Flush(curr);
-    nmqRecv(mNmq);  // necessary!!
+    nmqRecv(mNmq);  // necessary!! or eof segment will not be pulled of queue since they may not come in order
 }
 
 void NMQPipe::onSendFailed(NMQ *q, uint32_t sn) {

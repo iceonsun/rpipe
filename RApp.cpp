@@ -10,6 +10,18 @@
 #include "plog/Appenders/ConsoleAppender.h"
 #include "util/ProcUtil.h"
 #include "nmq/NMQPipe.h"
+#include "util/UvUtil.h"
+
+RApp::~RApp() {
+    if (mConsoleAppender) {
+        delete mConsoleAppender;
+        mConsoleAppender = nullptr;
+    }
+    if (mFileAppender) {
+        delete mFileAppender;
+        mFileAppender = nullptr;
+    }
+}
 
 int RApp::Init() {
     if (!mConf.Inited()) {
@@ -129,7 +141,6 @@ int RApp::makeDaemon() {
 }
 
 int RApp::Start() {
-    mBridge->Start();
     uv_timer_start(mFlushTimer, flush_cb, mConf.param.interval, mConf.param.interval);
     return uv_run(mLoop, UV_RUN_DEFAULT);
 }
@@ -164,10 +175,8 @@ void RApp::onExitSignal() {
 
 void RApp::watchExitSignal() {
     if (!mExitSig) {
-        mExitSig = static_cast<uv_signal_t *>(malloc(sizeof(uv_signal_t)));
-        uv_signal_init(mLoop, mExitSig);
-        mExitSig->data = this;
-        uv_signal_start(mExitSig, close_signal_handler, SIG_EXIT);
+        mExitSig = UvUtil::WatchSignal(mLoop, SIG_EXIT, close_signal_handler, this);
+        assert(mExitSig);
     }
 }
 

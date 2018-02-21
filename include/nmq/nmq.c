@@ -114,7 +114,7 @@ static inline void delete_segment(segment *seg);
 
 static inline void *nmq_malloc(size_t size);
 
-static inline void *nmq_free(void *addr);
+static inline void nmq_free(void *addr);
 
 static inline void allocate_mem(NMQ *q);
 
@@ -134,7 +134,7 @@ static inline int is_self_closed(NMQ *q);
 
 // enc
 // encode certain segment fields to buf. return new address that can encode
-char *encode_seg_and_data(segment *s, char *buf);
+static char *encode_seg_and_data(segment *s, char *buf);
 
 // utils
 static inline uint32_t modsn(uint32_t sn, uint32_t moder);
@@ -411,8 +411,8 @@ int32_t nmq_input(NMQ *q, const char *buf, const int buf_size) {
 int32_t do_recv(NMQ *q, char *buf, const int buf_size) {
     // todo: how large should buf_size be for datgram pkt?
     // https://stackoverflow.com/questions/2862071/how-large-should-my-recv-buffer-be-when-calling-recv-in-the-socket-library
-    int32_t rcvq_size = next_packet_size(&q->rcv_que);
-    if (rcvq_size > buf_size) { // simply drop packet if no enough buf
+    uint32_t rcvq_size = next_packet_size(&q->rcv_que);
+    if (rcvq_size > buf_size) { // simply return error if no enough buf
         return NMQ_ERR_MSG_SIZE;
     }
 
@@ -435,11 +435,9 @@ int32_t do_recv(NMQ *q, char *buf, const int buf_size) {
         }
     }
 
-    if (p - buf != rcvq_size) {
-        return NMQ_ERR_RCV_QUE_INCONSISTANCE;
-    }
+    assert(p - buf == ((int32_t) rcvq_size));
 
-    return p - buf;
+    return rcvq_size;
 }
 
 int32_t do_send(NMQ *q, const char *data, const int len) {
@@ -515,9 +513,7 @@ void fin_ops(NMQ *q, char cmd) {
 
 // < 0 for error.
 int32_t nmq_recv(NMQ *q, char *buf, const int buf_size) {
-    if (!q->inited) {
-        return NMQ_ERR_UNITIALIZED;
-    }
+    assert(q->inited);
 
     if (is_recv_done(q)) {
         return NMQ_RECV_EOF;
@@ -1082,7 +1078,7 @@ void check_send_done(NMQ *q) {
 
 int is_recv_done(NMQ *q) {
     if (q->peer_fin_sn > 0) {
-        if ((q->rcv_nxt > q->peer_fin_sn) && (!list_not_empty(&q->rcv_buf)) && (!list_not_empty(&q->rcv_que))) {
+        if ((q->rcv_nxt > q->peer_fin_sn) && (!list_not_empty(&q->rcv_que))) {
             return 1;
         }
     }
@@ -1133,7 +1129,7 @@ static inline void *nmq_malloc(size_t size) {
     return p;
 }
 
-static inline void *nmq_free(void *addr) {
+static inline void nmq_free(void *addr) {
     if (addr) {
         gs_free_fn(addr);
     }
@@ -1142,7 +1138,7 @@ static inline void *nmq_free(void *addr) {
 
 
 // encoding {
-char *encode_seg_and_data(segment *s, char *buf) {
+static char *encode_seg_and_data(segment *s, char *buf) {
     if (!s || !buf) {
         return buf;
     }

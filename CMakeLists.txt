@@ -6,13 +6,13 @@ set(CMAKE_CXX_STANDARD 11)
 include_directories(./include)
 
 set(NMQ_SOURCE include/nmq/dlist.c include/nmq/enc.c include/nmq/nmq.c include/nmq/util.c)
+
 set(SOURCE_FILES ${NMQ_SOURCE}
-    IPipe.cpp rcommon.c TopStreamPipe.cpp BtmDGramPipe.cpp RApp.cpp
-    Config.cpp BridgePipe.cpp SessionPipe.cpp SessionPipe.h ITopContainerPipe.cpp
-    RstSessionPipe.cpp ISessionPipe.cpp
+    IPipe.cpp rcommon.c TopStreamPipe.cpp BtmDGramPipe.cpp RApp.cpp Config.cpp BridgePipe.cpp SessionPipe.cpp
+    SessionPipe.h ITopContainerPipe.cpp RstSessionPipe.cpp ISessionPipe.cpp
     nmq/NMQPipe.cpp nmq/INMQPipe.cpp
     thirdparty/json11.cpp
-    util/FdUtil.cpp util/RTimer.cpp util/RPUtil.cpp util/ProcUtil.cpp
+    util/FdUtil.cpp util/RTimer.cpp util/RPUtil.cpp util/ProcUtil.cpp util/Handler.cpp util/UvUtil.cpp
     )
 
 set(SVR_SOURCE_FILES ${SOURCE_FILES} server/rserver_main.cpp server/RServerApp.cpp)
@@ -26,10 +26,10 @@ set_target_properties(
         COMPILE_DEFINITIONS RPIPE_IS_SERVER
 )
 
-add_executable(test_client ${CLI_SOURCE_FILES} test/test_client.cpp)
-add_executable(test_server ${SVR_SOURCE_FILES} test/test_server.cpp)
+add_executable(test_rclient ${CLI_SOURCE_FILES} test/test_client.cpp)
+add_executable(test_rserver ${SVR_SOURCE_FILES} test/test_server.cpp)
 set_target_properties(
-        test_server
+        test_rserver
         PROPERTIES
         COMPILE_DEFINITIONS RPIPE_IS_SERVER
 )
@@ -47,7 +47,7 @@ find_library(UV_PATH uv /usr/local/lib NO_DEFAULT_PATH)
 link_libraries($UV_PATH)
 target_link_libraries(rclient uv)
 target_link_libraries(rserver uv)
-target_link_libraries(test_client uv)
-target_link_libraries(test_server uv)
+target_link_libraries(test_rclient uv)
+target_link_libraries(test_rserver uv)
 target_link_libraries(echo_client uv)
 target_link_libraries(echo_server uv)

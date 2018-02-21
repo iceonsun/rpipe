@@ -24,7 +24,7 @@ public:
     int Close() override;
 
 protected:
-    static void echo_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
+    static void read_cb(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf);
 
     static void write_cb(uv_write_t *uvreq, int status);
 

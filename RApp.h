@@ -17,7 +17,7 @@ namespace plog {
 
 class RApp {
 public:
-    virtual ~RApp() = default;
+    virtual ~RApp();
 
     virtual int Parse(int argc, char **argv);
 

@@ -47,7 +47,7 @@ IPipe *RClientApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
 //}
 
 BridgePipe *RClientApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_loop_t *loop) {
-    auto *pipe = new BridgePipe(btmPipe);
+    auto *pipe = new BridgePipe(btmPipe, loop);
     auto fn = std::bind(&RClientApp::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
     pipe->SetOnCreateNewPipeCb(fn);    // explicitly set cb. ignore unknown data
 

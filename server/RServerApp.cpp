@@ -40,7 +40,7 @@ IPipe *RServerApp::CreateBtmPipe(const Config &conf, uv_loop_t *loop) {
 //}
 
 BridgePipe *RServerApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_loop_t *loop) {
-    auto *bridge = new BridgePipe(btmPipe);
+    auto *bridge = new BridgePipe(btmPipe, loop);
 
     bridge->SetOnErrCb([loop](IPipe *pipe, int err) {
         LOGE << "bridge pipe error: "<< err << ". Exit!";
