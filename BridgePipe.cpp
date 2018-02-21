@@ -50,7 +50,7 @@ int BridgePipe::Close() {
     }
 
     if (!mErrPipes.empty()) {
-        cleanErrPipes();
+        cleanErrPipes(false);
     }
 
     mHandler = nullptr;
@@ -170,11 +170,19 @@ void BridgePipe::Flush(uint32_t curr) {
     cleanErrPipes();
 }
 
-void BridgePipe::cleanErrPipes() {
+void BridgePipe::cleanErrPipes(bool delay) {
     for (auto &e: mErrPipes) {
-        auto msg = mHandler->ObtainMessage(MSG_CLOSE_PIPE, e.second);
-        mHandler->RemoveMessage(msg);
-        mHandler->SendMessageDelayed(msg, 500);
+        if (delay) {
+            auto msg = mHandler->ObtainMessage(MSG_CLOSE_PIPE, e.second);
+            mHandler->RemoveMessage(msg);
+            mHandler->SendMessageDelayed(msg, 500);
+        } else {
+            ISessionPipe *pipe = e.second;
+            LOGV << "deleting pipe: " << pipe->GetKey();
+            pipe->Close();
+            delete pipe;
+        }
+
         mTopPipes.erase(e.first);
     }
     mErrPipes.clear();

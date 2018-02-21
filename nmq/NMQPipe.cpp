@@ -59,6 +59,9 @@ int NMQPipe::Input(ssize_t nread, const rbuf_t *buf) {
         if (NMQ_ERR_CONV_DIFF == nret) {
             LOGE << "self conv: " << mConv << ", data conv: " << nmq_get_conv(buf->base) << " don't match";
             return NMQ_ERR_CONV_DIFF;
+        } else if (nret == NMQ_ERR_MSG_SIZE) {
+            LOGD << "data len is larger than mtu";
+            return 0;
         }   // other error just ignore it
         LOGV << "nmq_input " << nread << " bytes, ret: " << nret;
         if (nret >= 0) {

@@ -43,7 +43,7 @@ BridgePipe *RServerApp::CreateBridgePipe(const Config &conf, IPipe *btmPipe, uv_
     auto *bridge = new BridgePipe(btmPipe, loop);
 
     bridge->SetOnErrCb([loop](IPipe *pipe, int err) {
-        LOGE << "bridge pipe error: "<< err << ". Exit!";
+        LOGE << "bridge pipe error: " << err << ". Exit!";
         uv_stop(loop);
     });
     auto fn = std::bind(&RServerApp::OnRawData, this, std::placeholders::_1, std::placeholders::_2);
@@ -97,7 +97,7 @@ ISessionPipe *RServerApp::CreateStreamPipe(int sock, const ISessionPipe::KeyType
         return nullptr;
     }
     auto &conf = GetConfig();
-    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, conf.param.mtu - SEG_HEAD_SIZE);
+    IPipe *top = new TopStreamPipe((uv_stream_t *) tcp, GET_NMQ_MTU());
 
     uint32_t conv = ISessionPipe::ConvFromKey(key);
     auto nmq = NewNMQPipeFromConf(conv, conf, top);

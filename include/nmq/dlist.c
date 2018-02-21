@@ -30,12 +30,11 @@ void dlist_remove_node(dlnode *node) {
     if (!node) {
         return;
     }
-    if (node->prev) {
-        node->prev->next = node->next;
+    if (!node->prev || !node->next) {   // not doubly linked list
+        return;
     }
-    if (node->next) {
-        node->next->prev = node->prev;
-    }
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
     node->next = 0;
     node->prev = 0;
 }

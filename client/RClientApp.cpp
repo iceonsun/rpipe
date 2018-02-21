@@ -114,7 +114,7 @@ void RClientApp::newConn(uv_stream_t *server, int status) {
 void RClientApp::onNewClient(uv_stream_t *client) {
     mConv++;
     auto &conf = GetConfig();
-    IPipe *top = new TopStreamPipe(client, conf.param.mtu - SEG_HEAD_SIZE);
+    IPipe *top = new TopStreamPipe(client, GET_NMQ_MTU());
     auto nmq = NewNMQPipeFromConf(mConv, conf, top);
     nmq->SetSteady(false);
     SessionPipe *sess = new SessionPipe(nmq, mLoop, mConv, GetTarget());

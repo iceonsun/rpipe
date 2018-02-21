@@ -43,6 +43,8 @@ public:
 
     const sockaddr_in *GetTarget();
 
+    uint32_t GET_NMQ_MTU() const;
+
     static INMQPipe *NewNMQPipeFromConf(uint32_t conv, const Config &conf, IPipe *top);
 
     static const int SIG_EXIT = SIGUSR1;
@@ -64,6 +66,8 @@ private:
 
     int makeDaemon();
 
+    void initMTU();
+
 protected:
     uv_loop_t *mLoop = nullptr;
 
@@ -75,6 +79,7 @@ private:
     Config mConf;
     struct sockaddr_in mTargetAddr = {0};
     uv_signal_t *mExitSig = nullptr;
+    uint32_t mNmqMtu = 0;
 };
 
 

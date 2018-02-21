@@ -53,7 +53,7 @@ private:
 
     int removeAll();
 
-    void cleanErrPipes();
+    void cleanErrPipes(bool delay = true);
 
     void handleMessage(const Handler::Message &message);
 

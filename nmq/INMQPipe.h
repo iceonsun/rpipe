@@ -24,7 +24,7 @@ public:
 
     void SetFlowControl(bool fc);
 
-    void SetMSS(uint32_t MSS);
+    void SetNmqMTU(uint32_t mtu);
 
     void SetInterval(uint16_t interval);
 

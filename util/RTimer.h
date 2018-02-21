@@ -17,10 +17,11 @@ public:
     explicit RTimer(uv_loop_t *loop);
 
     void Start(uint32_t timeoutMs, uint32_t repeatMs, const TimeoutCb &cb, void *arg = nullptr);
+
     void Stop();
 
 protected:
-    static void timeout_cb(uv_timer_t* handle);
+    static void timeout_cb(uv_timer_t *handle);
 
 private:
     uv_timer_t *mTimer = nullptr;

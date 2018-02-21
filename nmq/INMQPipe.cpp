@@ -51,8 +51,8 @@ void INMQPipe::SetFlowControl(bool fc) {
     nmq_set_fc_on(mNmq, fc ? 1 : 0);
 }
 
-void INMQPipe::SetMSS(uint32_t MSS) {
-    nmq_set_nmq_mtu(mNmq, MSS);
+void INMQPipe::SetNmqMTU(uint32_t mtu) {
+    nmq_set_nmq_mtu(mNmq, mtu);
 }
 
 void INMQPipe::SetInterval(uint16_t interval) {

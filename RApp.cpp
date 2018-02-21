@@ -107,6 +107,8 @@ int RApp::doInit() {
         return -1;
     }
 
+    initMTU();
+
     IPipe *btmPipe = CreateBtmPipe(mConf, mLoop);
     if (!btmPipe) {
         return -1;
@@ -190,7 +192,7 @@ const sockaddr_in *RApp::GetTarget() {
 
 INMQPipe *RApp::NewNMQPipeFromConf(uint32_t conv, const Config &conf, IPipe *top) {
     auto nmq = new NMQPipe(conv, top);
-    nmq->SetMSS(conf.param.mtu);
+    nmq->SetNmqMTU(conf.param.mtu);
     nmq->SetWndSize(conf.param.sndwnd, conf.param.rcvwnd);
     nmq->SetFlowControl(conf.param.fc);
     nmq->SetInterval(conf.param.interval);
@@ -198,4 +200,13 @@ INMQPipe *RApp::NewNMQPipeFromConf(uint32_t conv, const Config &conf, IPipe *top
     nmq->SetTolerance(conf.param.tolerance);
 
     return nmq;
+}
+
+void RApp::initMTU() {
+    assert(mConf.param.mtu > ISessionPipe::HEAD_LEN);
+    mNmqMtu = mConf.param.mtu - ISessionPipe::HEAD_LEN; // attention, all header should be calculated
+}
+
+uint32_t RApp::GET_NMQ_MTU() const {
+    return mNmqMtu;
 }
