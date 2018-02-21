@@ -48,7 +48,7 @@ int Config::Parse(bool is_server, int argc, char **argv) {
 
     args::ValueFlag<int> fcOn(parser, "fc", "flow control. 0 for off. other for on (default off)", {"fc"});
     args::ValueFlag<int> daemon(parser, "daemon", "1 for running as daemon, 0 for not. (default as daemon)",
-                                {"daemon"});
+                                {'d', "daemon"});
     args::ValueFlag<std::string> fjson(parser, "/path/to/json_config", "json config file", {"json"});
     args::ValueFlag<std::string> flog(parser, "/path/to/log_file", "log file", {"log"});
     args::Flag verbose(parser, "verbose", "verbose log mode", {'v'});
